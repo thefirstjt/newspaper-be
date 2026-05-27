@@ -30,6 +30,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   // separate file so they never touch real data.
   DB_FILENAME: Env.schema.string.optional(),
 
+  // Reader context
+  // Directory holding the living markdown documents about the reader. Defaults
+  // to ./context; seeded from the shipped templates in resources/context.
+  READER_CONTEXT_DIR: Env.schema.string.optional(),
+
   // Newspaper schedule
   // The time of day (24-hour "HH:mm") at which the daily pipeline runs: it
   // scouts the web, builds the edition and sends the email. Defaults to 9pm.
