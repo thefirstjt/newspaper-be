@@ -234,8 +234,8 @@ const newspaperConfig: NewspaperConfig = {
 
   llm: {
     ranking: {
-      provider: env.get('LLM_RANKING_PROVIDER', 'openai'),
-      model: env.get('LLM_RANKING_MODEL', 'gpt-5-mini-2025-08-07'),
+      provider: env.get('LLM_RANKING_PROVIDER', 'anthropic'),
+      model: env.get('LLM_RANKING_MODEL', 'claude-haiku-4-5'),
     },
     summary: {
       provider: env.get('LLM_SUMMARY_PROVIDER', 'openai'),
