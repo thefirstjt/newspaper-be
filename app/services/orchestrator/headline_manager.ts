@@ -1,14 +1,18 @@
 import { generateText, Output } from 'ai'
-import { modelFor } from '#services/llm/models'
-import { rankingSchema, quizSchema } from '#services/llm/schemas'
-import { buildMessageUsingContext, assertNotEmpty, bulletList } from '#services/llm/helpers'
+import { modelFor } from '#services/orchestrator/models'
+import { rankingSchema, quizSchema } from '#services/orchestrator/schemas'
+import {
+  buildMessageUsingContext,
+  assertNotEmpty,
+  bulletList,
+} from '#services/orchestrator/helpers'
 import {
   KEY_LEARNING_SYSTEM_PROMPT,
   QUIZ_SYSTEM_PROMPT,
   RANKING_SYSTEM_PROMPT,
   SUMMARY_SYSTEM_PROMPT,
-} from '#services/llm/prompts'
-import { AgentTask } from '#services/llm/types'
+} from '#services/orchestrator/prompts'
+import { AgentTask } from '#services/orchestrator/types'
 import type {
   KeyLearningInput,
   ModelResolver,
@@ -17,7 +21,7 @@ import type {
   RankCandidatesInput,
   RankedCandidate,
   SummarizeInput,
-} from '#services/llm/types'
+} from '#services/orchestrator/types'
 
 /**
  * Runs the newspaper's editorial language-model work — ranking stories,

@@ -1,9 +1,9 @@
 import { generateText } from 'ai'
-import { modelFor } from '#services/llm/models'
-import { assertNotEmpty } from '#services/llm/helpers'
-import { REVISE_DOCUMENT_SYSTEM_PROMPT } from '#services/llm/prompts'
-import { AgentTask } from '#services/llm/types'
-import type { ModelResolver, ReviseDocumentInput } from '#services/llm/types'
+import { modelFor } from '#services/orchestrator/models'
+import { assertNotEmpty } from '#services/orchestrator/helpers'
+import { REVISE_DOCUMENT_SYSTEM_PROMPT } from '#services/orchestrator/prompts'
+import { AgentTask } from '#services/orchestrator/types'
+import type { ModelResolver, ReviseDocumentInput } from '#services/orchestrator/types'
 
 /**
  * Keeps the living reader documents up to date. Given a document's current

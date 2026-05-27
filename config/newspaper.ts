@@ -1,5 +1,5 @@
 import env from '#start/env'
-import type { LLMConfig } from '#services/llm/types'
+import type { LLMConfig } from '#services/orchestrator/types'
 
 /**
  * A single place from which the system discovers content for a category. Every

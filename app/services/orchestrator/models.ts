@@ -3,7 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModel } from 'ai'
 import env from '#start/env'
 import newspaperConfig from '#config/newspaper'
-import type { LLMProviderName, AgentTask } from '#services/llm/types'
+import type { LLMProviderName, AgentTask } from '#services/orchestrator/types'
 
 type Registry = (model: string) => LanguageModel
 

@@ -1,7 +1,7 @@
 import { test } from '@japa/runner'
 import { MockLanguageModelV3 } from 'ai/test'
-import { ContextRevisor } from '#services/llm/context_revisor'
-import { AgentTask } from '#services/llm/types'
+import { ContextRevisor } from '#services/orchestrator/context_revisor'
+import { AgentTask } from '#services/orchestrator/types'
 
 const usage = {
   inputTokens: { total: 0, noCache: 0, cacheRead: 0, cacheWrite: 0 },

@@ -1,8 +1,8 @@
 import { test } from '@japa/runner'
 import { MockLanguageModelV3 } from 'ai/test'
-import { HeadlineManager } from '#services/llm/headline_manager'
-import { RANKING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT } from '#services/llm/prompts'
-import { AgentTask } from '#services/llm/types'
+import { HeadlineManager } from '#services/orchestrator/headline_manager'
+import { RANKING_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMPT } from '#services/orchestrator/prompts'
+import { AgentTask } from '#services/orchestrator/types'
 
 const readerContext = '# About the reader\n\n## Who the reader is\n\nEnjoys distributed systems.'
 
