@@ -234,16 +234,16 @@ const newspaperConfig: NewspaperConfig = {
 
   llm: {
     ranking: {
-      provider: env.get('LLM_RANKING_PROVIDER', 'anthropic'),
-      model: env.get('LLM_RANKING_MODEL', 'claude-haiku-4-5'),
+      provider: env.get('LLM_RANKING_PROVIDER', 'openai'),
+      model: env.get('LLM_RANKING_MODEL', 'gpt-5-mini-2025-08-07'),
     },
     summary: {
-      provider: env.get('LLM_SUMMARY_PROVIDER', 'anthropic'),
-      model: env.get('LLM_SUMMARY_MODEL', 'claude-haiku-4-5'),
+      provider: env.get('LLM_SUMMARY_PROVIDER', 'openai'),
+      model: env.get('LLM_SUMMARY_MODEL', 'gpt-5-mini-2025-08-07'),
     },
     generation: {
-      provider: env.get('LLM_GENERATION_PROVIDER', 'anthropic'),
-      model: env.get('LLM_GENERATION_MODEL', 'claude-sonnet-4-6'),
+      provider: env.get('LLM_GENERATION_PROVIDER', 'openai'),
+      model: env.get('LLM_GENERATION_MODEL', 'gpt-5.4-2026-03-05'),
     },
   },
 }
