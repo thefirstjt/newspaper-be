@@ -51,6 +51,7 @@ test.group('HeadlineManager.rankCandidates', () => {
     categoryTitle: 'Engineering Blogs',
     relevanceHint: 'Deep system design writing.',
     readerContext,
+    limit: 6,
     candidates: [
       { id: 1, title: 'A', snippet: 'a', sourceName: 'Src' },
       { id: 2, title: 'B', snippet: 'b', sourceName: 'Src' },

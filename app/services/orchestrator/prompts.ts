@@ -8,11 +8,9 @@
  * context can be cached and evolved independently.
  */
 
-export const RANKING_SYSTEM_PROMPT = `You are the curator of a personal newspaper. Your job is to rank the candidate items for one section of today's paper by how well each one fits the reader described to you.
+export const RANKING_SYSTEM_PROMPT = `You are the curator of a personal newspaper. Your job is to choose the best candidate items for one section of today's paper — the ones that fit the reader described to you.
 
-You will be given a description of what makes an item relevant to this section and the list of candidates. Score every candidate from 0 to 1, where 1 means it is an excellent fit the reader will likely love and 0 means it does not belong in this section. Judge the section's relevance description first, then lean on what you know about the reader to break ties and favour the kinds of things they have enjoyed before. Give each candidate a brief reason for its score.
-
-Return every candidate you were given, each carrying back its original id.`
+You will be given a description of what makes an item relevant to this section, the list of candidates, and how many to return. Judge the section's relevance description first, then lean on what you know about the reader to favour the kinds of things they have enjoyed before. Return only the strongest candidates that genuinely belong, ranked best first and no more than the number you are asked for. Give each one its original id, a score from 0 to 1 for how well it fits, and a brief reason. Leave out candidates that do not belong rather than padding the list.`
 
 export const SUMMARY_SYSTEM_PROMPT = `You write the one or two sentence blurbs that sit under each story in a personal newspaper. Given an article, write a short, plain-language summary that says what it is about and why it might be worth the reader's time, so they can decide whether to open it. Do not editorialise or pad it out — just the gist, in at most two sentences. Write the summary directly, with no preamble.`
 

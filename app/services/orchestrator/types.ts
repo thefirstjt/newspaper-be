@@ -46,6 +46,8 @@ export interface RankCandidatesInput {
   /** The assembled "About the reader" markdown block (see ContextStore). */
   readerContext: string
   candidates: RankCandidate[]
+  /** How many of the best candidates to return, ranked. */
+  limit: number
 }
 
 export interface RankedCandidate {

@@ -47,6 +47,8 @@ export class HeadlineManager {
       'What makes an item relevant to this section:',
       input.relevanceHint,
       '',
+      `Return at most the ${input.limit} best candidates.`,
+      '',
       'Candidates:',
       JSON.stringify(input.candidates, null, 2),
     ].join('\n')
@@ -56,7 +58,6 @@ export class HeadlineManager {
       system: RANKING_SYSTEM_PROMPT,
       messages: buildMessageUsingContext(input.readerContext, userMessage, { cache: true }),
       output: Output.object({ schema: rankingSchema }),
-      maxOutputTokens: 2048,
     })
 
     return [...output.rankings].sort((a, b) => b.score - a.score)
@@ -80,7 +81,6 @@ export class HeadlineManager {
       model: this.getModelFor(AgentTask.SUMMARY),
       system: SUMMARY_SYSTEM_PROMPT,
       prompt: userMessage,
-      maxOutputTokens: 400,
     })
 
     return assertNotEmpty(text)
@@ -94,7 +94,6 @@ export class HeadlineManager {
       model: this.getModelFor(AgentTask.GENERATION),
       system: KEY_LEARNING_SYSTEM_PROMPT,
       messages: buildMessageUsingContext(input.readerContext, userMessage),
-      maxOutputTokens: 1024,
     })
 
     return assertNotEmpty(text)
@@ -114,7 +113,6 @@ export class HeadlineManager {
       system: QUIZ_SYSTEM_PROMPT,
       messages: buildMessageUsingContext(input.readerContext, userMessage),
       output: Output.object({ schema: quizSchema }),
-      maxOutputTokens: 2048,
     })
 
     return output.questions

@@ -29,7 +29,6 @@ export class ContextRevisor {
       model: this.getModelFor(AgentTask.GENERATION),
       system: REVISE_DOCUMENT_SYSTEM_PROMPT,
       prompt: userMessage,
-      maxOutputTokens: 1024,
     })
 
     return assertNotEmpty(text)

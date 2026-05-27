@@ -1,11 +1,12 @@
 import { DateTime } from 'luxon'
 import SeenUrl from '#models/seen_url'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ScoutedCandidate, SeenUrlGate } from '#services/scout/types'
 
 /**
  * The permanent record of every url already shown to or rated by the reader.
- * The scout uses it to drop stories that have come around before; later phases
- * add to it when an item is surfaced.
+ * The scout uses it to drop stories that have come around before; the edition
+ * builder adds to it when an item is surfaced.
  */
 export class SeenUrlStore implements SeenUrlGate {
   async filterUnseen(candidates: ScoutedCandidate[]): Promise<ScoutedCandidate[]> {
@@ -20,14 +21,21 @@ export class SeenUrlStore implements SeenUrlGate {
     return candidates.filter((candidate) => !seenHashes.has(candidate.urlHash))
   }
 
-  /** Records the given candidates as seen, skipping any already on record. */
-  async markSeen(candidates: ScoutedCandidate[]): Promise<void> {
+  /**
+   * Records the given candidates as seen, skipping any already on record. A
+   * transaction client can be passed so the write is part of a larger unit of
+   * work (such as saving an edition).
+   */
+  async markSeen(
+    candidates: ScoutedCandidate[],
+    client?: TransactionClientContract
+  ): Promise<void> {
     if (candidates.length === 0) {
       return
     }
 
     const hashes = candidates.map((candidate) => candidate.urlHash)
-    const existing = await SeenUrl.query().whereIn('url_hash', hashes)
+    const existing = await SeenUrl.query({ client }).whereIn('url_hash', hashes)
     const existingHashes = new Set(existing.map((row) => row.urlHash))
 
     const rows = candidates
@@ -39,7 +47,7 @@ export class SeenUrlStore implements SeenUrlGate {
       }))
 
     if (rows.length > 0) {
-      await SeenUrl.createMany(dedupeByHash(rows))
+      await SeenUrl.createMany(dedupeByHash(rows), { client })
     }
   }
 }
