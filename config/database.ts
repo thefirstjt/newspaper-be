@@ -35,6 +35,15 @@ const dbConfig = defineConfig({
          */
         paths: ['database/migrations'],
       },
+
+      /**
+       * The models are written by hand (extending BaseModel), so there is no
+       * generated schema file to keep in sync. Generation defaults to on, so it
+       * is turned off explicitly here.
+       */
+      schemaGeneration: {
+        enabled: false,
+      },
     },
 
     /**
