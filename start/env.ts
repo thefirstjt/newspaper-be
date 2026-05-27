@@ -51,14 +51,17 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_FROM: Env.schema.string.optional(),
   EMAIL_RECIPIENT: Env.schema.string.optional(),
 
-  // Language model used for ranking, summaries, the key learning and the quiz.
-  LLM_PROVIDER: Env.schema.enum.optional(['anthropic', 'openai'] as const),
-  LLM_API_KEY: Env.schema.string.optional(),
-  // Model names per task. Cheaper models suit ranking and summarising; stronger
-  // models suit the key learning and quiz. Each falls back to a provider default.
-  LLM_MODEL_RANKING: Env.schema.string.optional(),
-  LLM_MODEL_SUMMARY: Env.schema.string.optional(),
-  LLM_MODEL_GENERATION: Env.schema.string.optional(),
+  // Language models. Each task (ranking, summary, generation) picks its own
+  // provider and model, so they can be mixed and matched. Only the keys for the
+  // providers actually used need to be set.
+  ANTHROPIC_API_KEY: Env.schema.string.optional(),
+  OPENAI_API_KEY: Env.schema.string.optional(),
+  LLM_RANKING_PROVIDER: Env.schema.enum.optional(['anthropic', 'openai'] as const),
+  LLM_RANKING_MODEL: Env.schema.string.optional(),
+  LLM_SUMMARY_PROVIDER: Env.schema.enum.optional(['anthropic', 'openai'] as const),
+  LLM_SUMMARY_MODEL: Env.schema.string.optional(),
+  LLM_GENERATION_PROVIDER: Env.schema.enum.optional(['anthropic', 'openai'] as const),
+  LLM_GENERATION_MODEL: Env.schema.string.optional(),
 
   // Content discovery
   YOUTUBE_API_KEY: Env.schema.string.optional(),

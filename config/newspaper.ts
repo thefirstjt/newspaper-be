@@ -1,5 +1,5 @@
 import env from '#start/env'
-import type { LlmModels } from '#services/llm/types'
+import type { LLMConfig } from '#services/llm/types'
 
 /**
  * A single place from which the system discovers content for a category. Every
@@ -67,12 +67,8 @@ export interface NewspaperConfig {
     runTime: string
     emailEnabled: boolean
   }
-  /** Which language model provider powers ranking and generation, and which
-   * model handles each kind of task. */
-  llm: {
-    provider: 'anthropic' | 'openai'
-    models: LlmModels
-  }
+  /** Which provider and model handle each language-model task. */
+  llm: LLMConfig
 }
 
 const newspaperConfig: NewspaperConfig = {
@@ -237,11 +233,17 @@ const newspaperConfig: NewspaperConfig = {
   },
 
   llm: {
-    provider: env.get('LLM_PROVIDER', 'anthropic'),
-    models: {
-      ranking: env.get('LLM_MODEL_RANKING', 'claude-haiku-4-5'),
-      summary: env.get('LLM_MODEL_SUMMARY', 'claude-haiku-4-5'),
-      generation: env.get('LLM_MODEL_GENERATION', 'claude-sonnet-4-6'),
+    ranking: {
+      provider: env.get('LLM_RANKING_PROVIDER', 'anthropic'),
+      model: env.get('LLM_RANKING_MODEL', 'claude-haiku-4-5'),
+    },
+    summary: {
+      provider: env.get('LLM_SUMMARY_PROVIDER', 'anthropic'),
+      model: env.get('LLM_SUMMARY_MODEL', 'claude-haiku-4-5'),
+    },
+    generation: {
+      provider: env.get('LLM_GENERATION_PROVIDER', 'anthropic'),
+      model: env.get('LLM_GENERATION_MODEL', 'claude-sonnet-4-6'),
     },
   },
 }

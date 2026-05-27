@@ -1,0 +1,118 @@
+import { generateText, Output } from 'ai'
+import { modelFor } from '#services/llm/models'
+import { rankingSchema, quizSchema } from '#services/llm/schemas'
+import { buildMessageUsingContext, assertNotEmpty, bulletList } from '#services/llm/helpers'
+import {
+  KEY_LEARNING_SYSTEM_PROMPT,
+  QUIZ_SYSTEM_PROMPT,
+  RANKING_SYSTEM_PROMPT,
+  SUMMARY_SYSTEM_PROMPT,
+} from '#services/llm/prompts'
+import { AgentTask } from '#services/llm/types'
+import type {
+  KeyLearningInput,
+  ModelResolver,
+  QuizInput,
+  QuizQuestionDraft,
+  RankCandidatesInput,
+  RankedCandidate,
+  SummarizeInput,
+} from '#services/llm/types'
+
+/**
+ * Runs the newspaper's editorial language-model work — ranking stories,
+ * summarising them, and writing the key learning and quiz — on top of the
+ * Vercel AI SDK, which handles every provider. Each task resolves its own
+ * model, so tasks can run on different providers (rank on OpenAI, summarise on
+ * Claude, and so on).
+ *
+ * The resolver is injectable, which both keeps the per-task model choice in one
+ * place and lets tests supply a mock model so no real network calls are made.
+ */
+export class HeadlineManager {
+  constructor(private getModelFor: ModelResolver = modelFor) {}
+
+  /**
+   * Scores the candidate stories for one section by how well they fit the
+   * reader, returning them ordered best first.
+   */
+  async rankCandidates(input: RankCandidatesInput): Promise<RankedCandidate[]> {
+    const userMessage = [
+      `Section: ${input.categoryTitle}`,
+      '',
+      'What makes an item relevant to this section:',
+      input.relevanceHint,
+      '',
+      'Candidates:',
+      JSON.stringify(input.candidates, null, 2),
+    ].join('\n')
+
+    const { output } = await generateText({
+      model: this.getModelFor(AgentTask.RANKING),
+      system: RANKING_SYSTEM_PROMPT,
+      messages: buildMessageUsingContext(input.readerContext, userMessage, { cache: true }),
+      output: Output.object({ schema: rankingSchema }),
+      maxOutputTokens: 2048,
+    })
+
+    return [...output.rankings].sort((a, b) => b.score - a.score)
+  }
+
+  /**
+   * Writes the short blurb shown under a story so the reader can decide whether
+   * to open it. Summaries do not depend on the reader, so no reader context is
+   * sent.
+   */
+  async summarizeArticle(input: SummarizeInput): Promise<string> {
+    const userMessage = [
+      `Title: ${input.title}`,
+      `Source: ${input.sourceName}`,
+      '',
+      'Article:',
+      input.content,
+    ].join('\n')
+
+    const { text } = await generateText({
+      model: this.getModelFor(AgentTask.SUMMARY),
+      system: SUMMARY_SYSTEM_PROMPT,
+      prompt: userMessage,
+      maxOutputTokens: 400,
+    })
+
+    return assertNotEmpty(text)
+  }
+
+  /** Writes the one-or-two paragraph key learning of the day. */
+  async writeKeyLearning(input: KeyLearningInput): Promise<string> {
+    const userMessage = `The reader's learning-gap topics:\n${bulletList(input.gapTopics)}`
+
+    const { text } = await generateText({
+      model: this.getModelFor(AgentTask.GENERATION),
+      system: KEY_LEARNING_SYSTEM_PROMPT,
+      messages: buildMessageUsingContext(input.readerContext, userMessage),
+      maxOutputTokens: 1024,
+    })
+
+    return assertNotEmpty(text)
+  }
+
+  /** Writes the day's multiple-choice quiz questions. */
+  async writeQuiz(input: QuizInput): Promise<QuizQuestionDraft[]> {
+    const userMessage = [
+      `Write ${input.count} question${input.count === 1 ? '' : 's'}.`,
+      '',
+      "The reader's learning-gap topics to draw from:",
+      bulletList(input.gapTopics),
+    ].join('\n')
+
+    const { output } = await generateText({
+      model: this.getModelFor(AgentTask.GENERATION),
+      system: QUIZ_SYSTEM_PROMPT,
+      messages: buildMessageUsingContext(input.readerContext, userMessage),
+      output: Output.object({ schema: quizSchema }),
+      maxOutputTokens: 2048,
+    })
+
+    return output.questions
+  }
+}

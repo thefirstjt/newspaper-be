@@ -1,18 +1,36 @@
 /**
- * The language-model capabilities the newspaper needs, kept provider-agnostic so
- * a concrete implementation can wire each one to Anthropic, OpenAI, or another
- * provider. The pipeline depends on this interface, never on a specific vendor.
+ * The input and output shapes for the language-model work in HeadlineManager,
+ * plus the small config types that decide which model runs each task. Provider
+ * differences are handled by the Vercel AI SDK, so these describe only the
+ * newspaper's own data.
  */
 
-/** Which model to use for each kind of task. */
-export interface LlmModels {
-  /** Cheaper, faster model for ranking candidates. */
-  ranking: string
-  /** Cheaper, faster model for writing summaries. */
-  summary: string
-  /** Stronger model for the key learning, quiz, and revising reader documents. */
-  generation: string
+export type LLMProviderName = 'anthropic' | 'openai'
+
+/** The distinct kinds of work the newspaper asks a model to do. */
+export enum AgentTask {
+  RANKING = 'ranking',
+  SUMMARY = 'summary',
+  GENERATION = 'generation',
 }
+
+/**
+ * Which provider and model handle a single task. Each task is configured
+ * independently, so (for example) ranking can run on OpenAI while summaries run
+ * on Claude.
+ */
+export interface TaskModelConfig {
+  provider: LLMProviderName
+  model: string
+}
+
+export type LLMConfig = Record<AgentTask, TaskModelConfig>
+
+/**
+ * Resolves the AI SDK model to use for a task. Injected into the manager and
+ * revisor so tests can supply a mock model in place of a real provider.
+ */
+export type ModelResolver = (task: AgentTask) => import('ai').LanguageModel
 
 export interface RankCandidate {
   /** A caller-supplied identifier echoed back in the ranking (e.g. the item id). */
@@ -74,17 +92,4 @@ export interface ReviseDocumentInput {
   currentContent: string
   /** A plain-language description of what we have recently observed about the reader. */
   observations: string
-}
-
-export interface LlmProvider {
-  /** Score candidate items for one category by how well they fit the reader. */
-  rankCandidates(input: RankCandidatesInput): Promise<RankedCandidate[]>
-  /** Write a short blurb that helps the reader decide whether to open an item. */
-  summarize(input: SummarizeInput): Promise<string>
-  /** Write the one-or-two paragraph key learning of the day. */
-  generateKeyLearning(input: KeyLearningInput): Promise<string>
-  /** Write the day's multiple-choice quiz questions. */
-  generateQuiz(input: QuizInput): Promise<QuizQuestionDraft[]>
-  /** Rewrite a living reader document to absorb recent observations. */
-  reviseDocument(input: ReviseDocumentInput): Promise<string>
 }
