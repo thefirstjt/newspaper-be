@@ -103,7 +103,12 @@ export default defineConfig({
   | the production build.
   |
   */
-  metaFiles: [],
+  metaFiles: [
+    {
+      pattern: 'resources/context/**/*.md',
+      reloadServer: false,
+    },
+  ],
 
   hooks: {
     init: [

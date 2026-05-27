@@ -30,3 +30,6 @@ yarn-error.log
 CLAUDE.md
 spec.md
 thoughts.md
+
+# Live reader-context documents (seeded from resources/context templates)
+/context/
