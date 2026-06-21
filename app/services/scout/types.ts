@@ -46,3 +46,13 @@ export interface SourceFetcher {
 export interface SeenUrlGate {
   filterUnseen(candidates: ScoutedCandidate[]): Promise<ScoutedCandidate[]>
 }
+
+/**
+ * Remembers the numeric X user id behind a handle so it only has to be resolved
+ * from the API once. `lookup` returns null when the handle has not been seen
+ * before, in which case the caller resolves it and calls `remember`.
+ */
+export interface XAccountCache {
+  lookup(username: string): Promise<string | null>
+  remember(username: string, userId: string): Promise<void>
+}

@@ -7,7 +7,7 @@ import type { LLMConfig } from '#services/orchestrator/types'
  * holds the details specific to that type (for example the feed url for RSS, or
  * the channel id for YouTube).
  */
-export type SourceType = 'rss' | 'youtube' | 'websearch'
+export type SourceType = 'rss' | 'youtube' | 'websearch' | 'x'
 
 export interface SourceConfig {
   type: SourceType
@@ -19,6 +19,8 @@ export interface SourceConfig {
     channelId?: string
     /** A topic or query hint that guides the search, for `websearch` sources. */
     query?: string
+    /** X (Twitter) handle without the leading @, for `x` sources. */
+    username?: string
   }
 }
 
@@ -182,6 +184,16 @@ const newspaperConfig: NewspaperConfig = {
           settings: {
             query: 'most significant artificial intelligence news today from major news outlets',
           },
+        },
+        {
+          type: 'x',
+          name: 'Andrej Karpathy',
+          settings: { username: 'karpathy' },
+        },
+        {
+          type: 'x',
+          name: 'Sam Altman',
+          settings: { username: 'sama' },
         },
       ],
     },

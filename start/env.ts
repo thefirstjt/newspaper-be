@@ -66,6 +66,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   // Content discovery
   YOUTUBE_API_KEY: Env.schema.string.optional(),
   WEBSEARCH_API_KEY: Env.schema.string.optional(),
+  // X (Twitter) API bearer token, used to read posts from configured accounts.
+  X_API_KEY: Env.schema.string.optional(),
 
   // Telegram link ingestion (long-polling bot)
   TELEGRAM_BOT_TOKEN: Env.schema.string.optional(),

@@ -3,6 +3,8 @@ import newspaperConfig from '#config/newspaper'
 import type { CategoryConfig, SourceType } from '#config/newspaper'
 import { RssFetcher } from '#services/scout/rss_fetcher'
 import { YoutubeFetcher } from '#services/scout/youtube_fetcher'
+import { XFetcher } from '#services/scout/x_fetcher'
+import { XAccountStore } from '#services/scout/x_account_store'
 import { SeenUrlStore } from '#services/scout/seen_url_store'
 import { canonicalizeUrl, hashUrl } from '#services/scout/url'
 import type {
@@ -58,8 +60,8 @@ export class Scout {
 
 /**
  * Builds a scout with the fetchers the environment can support. RSS always
- * works; YouTube is only wired up when an API key is configured, so YouTube
- * sources are simply skipped otherwise.
+ * works; YouTube and X are only wired up when their API keys are configured, so
+ * sources of those types are simply skipped otherwise.
  */
 export function createScout(): Scout {
   const fetchers: Partial<Record<SourceType, SourceFetcher>> = {
@@ -69,6 +71,11 @@ export function createScout(): Scout {
   const youtubeApiKey = env.get('YOUTUBE_API_KEY')
   if (youtubeApiKey) {
     fetchers.youtube = new YoutubeFetcher(youtubeApiKey)
+  }
+
+  const xApiKey = env.get('X_API_KEY')
+  if (xApiKey) {
+    fetchers.x = new XFetcher(xApiKey, new XAccountStore())
   }
 
   return new Scout(fetchers, new SeenUrlStore())
