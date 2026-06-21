@@ -62,6 +62,10 @@ export default class Item extends BaseModel {
   @column()
   declare isUserSubmitted: boolean
 
+  /** When this item's discard was folded into preferences, or null (also null unless discarded). */
+  @column.dateTime()
+  declare learnedAt: DateTime | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

@@ -3,6 +3,7 @@ import type { CommandOptions } from '@adonisjs/core/types/ace'
 import { DateTime } from 'luxon'
 import Item from '#models/item'
 import { createEditionBuilder } from '#services/edition/edition_builder'
+import { createPreferenceLearner } from '#services/preferences/preference_learner'
 
 /**
  * Builds the newspaper edition for a day: it scouts for stories, ranks and
@@ -22,6 +23,14 @@ export default class RunDaily extends BaseCommand {
     const date = this.date ?? DateTime.now().toISODate()!
 
     this.logger.info(`Building edition for ${date}…`)
+
+    const learned = await createPreferenceLearner().learn()
+    if (learned > 0) {
+      this.logger.info(
+        `Folded ${learned} piece(s) of recent feedback into the reader's preferences.`
+      )
+    }
+
     const { edition, failures } = await createEditionBuilder(this.logger).build(date)
 
     const items = await Item.query().where('edition_id', edition.id)

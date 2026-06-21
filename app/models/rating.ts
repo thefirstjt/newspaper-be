@@ -18,6 +18,10 @@ export default class Rating extends BaseModel {
   @column()
   declare note: string | null
 
+  /** When this rating was folded into the reader's preferences, or null if not yet. */
+  @column.dateTime()
+  declare learnedAt: DateTime | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
