@@ -2,6 +2,7 @@ import { BaseCommand, flags } from '@adonisjs/core/ace'
 import type { CommandOptions } from '@adonisjs/core/types/ace'
 import { DateTime } from 'luxon'
 import Item from '#models/item'
+import QuizQuestion from '#models/quiz_question'
 import { createEditionBuilder } from '#services/edition/edition_builder'
 import { createPreferenceLearner } from '#services/preferences/preference_learner'
 
@@ -36,9 +37,12 @@ export default class RunDaily extends BaseCommand {
     const items = await Item.query().where('edition_id', edition.id)
     const surfaced = items.filter((item) => item.state === 'surfaced').length
     const reserve = items.filter((item) => item.state === 'reserve').length
+    const quizCount = await QuizQuestion.query().where('edition_id', edition.id).count('* as total')
+    const questions = Number(quizCount[0].$extras.total)
 
     this.logger.success(
-      `Edition ${edition.date} built — ${surfaced} surfaced, ${reserve} in reserve.`
+      `Edition ${edition.date} built — ${surfaced} surfaced, ${reserve} in reserve, ` +
+        `key learning written, ${questions} quiz question(s).`
     )
 
     if (failures.length > 0) {

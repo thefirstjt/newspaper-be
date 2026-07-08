@@ -4,8 +4,9 @@ import { EditionBuilder } from '#services/edition/edition_builder'
 import { SeenUrlStore } from '#services/scout/seen_url_store'
 import Edition from '#models/edition'
 import Item from '#models/item'
+import QuizQuestion from '#models/quiz_question'
 import SeenUrl from '#models/seen_url'
-import type { RankedCandidate } from '#services/orchestrator/types'
+import type { QuizQuestionDraft, RankedCandidate } from '#services/orchestrator/types'
 import type { ScoutResult, ScoutedCandidate } from '#services/scout/types'
 
 function candidate(categoryKey: string, title: string): ScoutedCandidate {
@@ -32,12 +33,25 @@ function scoutReturning(candidates: ScoutedCandidate[]) {
  * test can tell whether the builder honours the ranking order, and summarise by
  * echoing the title.
  */
+/** Canned key learning and quiz so the builder has something to persist. */
+const writeKeyLearning = async () => 'Today you learned about distributed systems.'
+const writeQuiz = async (input: { count: number }): Promise<QuizQuestionDraft[]> =>
+  Array.from({ length: input.count }, (_, index) => ({
+    topic: 'system design',
+    question: `Question ${index + 1}?`,
+    options: ['A', 'B', 'C', 'D'],
+    correctIndex: 0,
+    explanation: 'Because A.',
+  }))
+
 const headlines = {
   rankCandidates: async (input: { candidates: { id: number }[] }): Promise<RankedCandidate[]> =>
     input.candidates
       .map((entry) => ({ id: entry.id, score: entry.id, reason: 'because' }))
       .sort((a, b) => b.score - a.score),
   summarizeArticle: async (input: { title: string }) => `Summary: ${input.title}`,
+  writeKeyLearning,
+  writeQuiz,
 }
 
 const emptyReaderContext = { assembleReaderContext: async () => '' }
@@ -92,6 +106,28 @@ test.group('EditionBuilder', (group) => {
     assert.isNull(reserve.summary)
   })
 
+  test('writes the key learning and quiz onto the edition', async ({ assert }) => {
+    const { edition } = await builderWith(candidates).build('2026-05-27')
+
+    assert.equal(edition.keyLearning, 'Today you learned about distributed systems.')
+
+    const questions = await QuizQuestion.query().where('edition_id', edition.id)
+    assert.isAtLeast(questions.length, 1)
+    assert.deepEqual(questions[0].options, ['A', 'B', 'C', 'D'])
+    assert.equal(questions[0].correctIndex, 0)
+  })
+
+  test('replaces the previous quiz when a day is rebuilt', async ({ assert }) => {
+    const builder = builderWith(candidates)
+    const first = await builder.build('2026-05-27')
+    await builder.build('2026-05-27')
+
+    const questions = await QuizQuestion.query().where('edition_id', first.edition.id)
+    // Every question belongs to the single rebuilt edition, none left orphaned.
+    const allQuestions = await QuizQuestion.all()
+    assert.lengthOf(allQuestions, questions.length)
+  })
+
   test('records only the surfaced items as seen', async ({ assert }) => {
     await builderWith(candidates).build('2026-05-27')
 
@@ -121,6 +157,8 @@ test.group('EditionBuilder', (group) => {
         { id: 1, score: 0.5, reason: 'ok' },
       ],
       summarizeArticle: async (input: { title: string }) => `Summary: ${input.title}`,
+      writeKeyLearning,
+      writeQuiz,
     }
     const builder = new EditionBuilder({
       scout: scoutReturning([candidate('eng-blogs', 'E1'), candidate('eng-blogs', 'E2')]),
@@ -151,6 +189,8 @@ test.group('EditionBuilder', (group) => {
       summarizeArticle: async () => {
         throw new Error('model is down')
       },
+      writeKeyLearning,
+      writeQuiz,
     }
     const failing = new EditionBuilder({
       scout: scoutReturning(candidates),

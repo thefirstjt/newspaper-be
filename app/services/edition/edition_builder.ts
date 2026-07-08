@@ -2,6 +2,7 @@ import db from '@adonisjs/lucid/services/db'
 import newspaperConfig from '#config/newspaper'
 import Edition from '#models/edition'
 import Item from '#models/item'
+import QuizQuestion from '#models/quiz_question'
 import { createScout } from '#services/scout/scout'
 import { SeenUrlStore } from '#services/scout/seen_url_store'
 import { getContextStore } from '#services/context/context_store_manager'
@@ -23,7 +24,10 @@ export interface EditionLogger {
  */
 export interface EditionBuilderDeps {
   scout: Pick<Scout, 'scout'>
-  headlines: Pick<HeadlineManager, 'rankCandidates' | 'summarizeArticle'>
+  headlines: Pick<
+    HeadlineManager,
+    'rankCandidates' | 'summarizeArticle' | 'writeKeyLearning' | 'writeQuiz'
+  >
   readerContext: Pick<ContextStore, 'assembleReaderContext'>
   seenUrls: Pick<SeenUrlStore, 'markSeen'>
   logger: EditionLogger
@@ -129,6 +133,17 @@ export class EditionBuilder {
       )
     }
 
+    logger.info('Writing the key learning and quiz…')
+    const keyLearning = await this.deps.headlines.writeKeyLearning({
+      gapTopics: newspaperConfig.gapTopics,
+      readerContext,
+    })
+    const quizQuestions = await this.deps.headlines.writeQuiz({
+      gapTopics: newspaperConfig.gapTopics,
+      count: pickQuizCount(newspaperConfig.quiz),
+      readerContext,
+    })
+
     logger.info('Saving edition…')
     const edition = await db.transaction(async (trx) => {
       const built = await this.resetEdition(date, trx)
@@ -157,8 +172,23 @@ export class EditionBuilder {
         )
       }
 
+      for (const question of quizQuestions) {
+        await QuizQuestion.create(
+          {
+            editionId: built.id,
+            topic: question.topic,
+            question: question.question,
+            options: question.options,
+            correctIndex: question.correctIndex,
+            explanation: question.explanation,
+          },
+          { client: trx }
+        )
+      }
+
       await this.deps.seenUrls.markSeen(surfaced, trx)
 
+      built.keyLearning = keyLearning
       built.status = 'ready'
       built.useTransaction(trx)
       await built.save()
@@ -181,6 +211,7 @@ export class EditionBuilder {
     }
 
     await Item.query({ client: trx }).where('edition_id', existing.id).delete()
+    await QuizQuestion.query({ client: trx }).where('edition_id', existing.id).delete()
 
     existing.status = 'building'
     existing.keyLearning = null
@@ -189,6 +220,12 @@ export class EditionBuilder {
 
     return existing
   }
+}
+
+/** Picks how many quiz questions to write, anywhere in the configured range. */
+function pickQuizCount(quiz: { min: number; max: number }): number {
+  const span = quiz.max - quiz.min + 1
+  return quiz.min + Math.floor(Math.random() * span)
 }
 
 /** Builds an edition builder wired to the real services, logging progress. */
