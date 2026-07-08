@@ -1,12 +1,24 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { PreferenceLearner } from '#services/preferences/preference_learner'
+import User from '#models/user'
 import Edition from '#models/edition'
 import Item from '#models/item'
 import Rating from '#models/rating'
 
-function itemFor(editionId: number, title: string, state: string) {
+let counter = 0
+async function makeUser() {
+  counter += 1
+  return User.create({
+    name: 'Reader',
+    email: `reader-${counter}@example.com`,
+    password: 'secret123',
+  })
+}
+
+function itemFor(userId: string, editionId: number, title: string, state: string) {
   return Item.create({
+    userId,
     editionId,
     categoryKey: 'eng-blogs',
     url: `https://example.com/${title}`,
@@ -19,13 +31,15 @@ function itemFor(editionId: number, title: string, state: string) {
   })
 }
 
-function learnerCapturing() {
+function learnerCapturing(userId: string) {
   const captured = {
     observations: '',
     written: null as { key: string; content: string } | null,
     reviseCalls: 0,
   }
   const learner = new PreferenceLearner({
+    userId,
+    categoryTitles: new Map([['eng-blogs', 'Engineering Blogs']]),
     context: {
       read: async () => 'Current preferences.',
       write: async (key, content) => {
@@ -47,18 +61,19 @@ test.group('PreferenceLearner', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  async function seedFeedback() {
-    const edition = await Edition.create({ date: '2026-05-27', status: 'ready' })
-    const rated = await itemFor(edition.id, 'Kafka deep dive', 'rated')
-    await Rating.create({ itemId: rated.id, stars: 5, note: 'loved the internals' })
-    await itemFor(edition.id, 'Crypto price drama', 'discarded')
+  async function seedFeedback(userId: string) {
+    const edition = await Edition.create({ userId, date: '2026-05-27', status: 'ready' })
+    const rated = await itemFor(userId, edition.id, 'Kafka deep dive', 'rated')
+    await Rating.create({ userId, itemId: rated.id, stars: 5, note: 'loved the internals' })
+    await itemFor(userId, edition.id, 'Crypto price drama', 'discarded')
   }
 
   test('describes ratings and discards and rewrites the preferences document', async ({
     assert,
   }) => {
-    await seedFeedback()
-    const { learner, captured } = learnerCapturing()
+    const user = await makeUser()
+    await seedFeedback(user.id)
+    const { learner, captured } = learnerCapturing(user.id)
 
     const applied = await learner.learn()
 
@@ -72,8 +87,9 @@ test.group('PreferenceLearner', (group) => {
   })
 
   test('marks folded signals as learned and does not re-apply them', async ({ assert }) => {
-    await seedFeedback()
-    const { learner, captured } = learnerCapturing()
+    const user = await makeUser()
+    await seedFeedback(user.id)
+    const { learner, captured } = learnerCapturing(user.id)
 
     await learner.learn()
 
@@ -88,7 +104,8 @@ test.group('PreferenceLearner', (group) => {
   })
 
   test('does nothing when there is no new feedback', async ({ assert }) => {
-    const { learner, captured } = learnerCapturing()
+    const user = await makeUser()
+    const { learner, captured } = learnerCapturing(user.id)
 
     const applied = await learner.learn()
 

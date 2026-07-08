@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
+import User from '#models/user'
 import Edition from '#models/edition'
 import Item from '#models/item'
 import QuizQuestion from '#models/quiz_question'
@@ -19,13 +20,22 @@ function recordingSender(): EmailSender & { sent: EmailMessage[] } {
   }
 }
 
+let counter = 0
 async function editionWithContent(date: string) {
+  counter += 1
+  const user = await User.create({
+    name: 'Reader',
+    email: `reader-${counter}@example.com`,
+    password: 'secret123',
+  })
   const edition = await Edition.create({
+    userId: user.id,
     date,
     status: 'ready',
     keyLearning: 'Today you learned about quorums.',
   })
   await Item.create({
+    userId: user.id,
     editionId: edition.id,
     categoryKey: 'eng-blogs',
     url: 'https://example.com/story',
@@ -42,6 +52,7 @@ async function editionWithContent(date: string) {
     isUserSubmitted: false,
   })
   await Item.create({
+    userId: user.id,
     editionId: edition.id,
     categoryKey: 'eng-blogs',
     url: 'https://example.com/reserve',
@@ -58,6 +69,7 @@ async function editionWithContent(date: string) {
     isUserSubmitted: false,
   })
   await QuizQuestion.create({
+    userId: user.id,
     editionId: edition.id,
     topic: 'system design',
     question: 'What is a quorum?',
@@ -76,13 +88,13 @@ test.group('EditionMailer', (group) => {
     const edition = await editionWithContent('2026-06-21')
     const sender = recordingSender()
 
-    await new EditionMailer(
-      'reader@example.com',
-      'https://app.example.com',
-      'newspaper@percussionlabs.ai',
-      'Tomiwa',
-      sender
-    ).deliver(edition)
+    await new EditionMailer({
+      recipient: 'reader@example.com',
+      appUrl: 'https://app.example.com',
+      fromAddress: 'newspaper@percussionlabs.ai',
+      recipientName: 'Tomiwa',
+      sender,
+    }).deliver(edition)
 
     assert.lengthOf(sender.sent, 1)
     const message = sender.sent[0]
@@ -103,13 +115,13 @@ test.group('EditionMailer', (group) => {
 
     await assert.rejects(
       () =>
-        new EditionMailer(
-          '',
-          'https://app.example.com',
-          'newspaper@percussionlabs.ai',
-          'Tomiwa',
-          sender
-        ).deliver(edition),
+        new EditionMailer({
+          recipient: '',
+          appUrl: 'https://app.example.com',
+          fromAddress: 'newspaper@percussionlabs.ai',
+          recipientName: 'Tomiwa',
+          sender,
+        }).deliver(edition),
       /EMAIL_RECIPIENT/
     )
     assert.lengthOf(sender.sent, 0)

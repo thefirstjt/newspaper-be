@@ -9,15 +9,23 @@ import SeenUrl from '#models/seen_url'
 import QuizQuestion from '#models/quiz_question'
 import SubmittedLink from '#models/submitted_link'
 
+let counter = 0
 async function reader() {
-  return User.create({ fullName: 'Reader', email: 'reader@example.com', password: 'secret123' })
+  counter += 1
+  return User.create({
+    name: 'Reader',
+    email: `reader-${counter}@example.com`,
+    password: 'secret123',
+  })
 }
 
 async function makeItem(
+  userId: string,
   editionId: number,
   attributes: Partial<Item> & { title: string; categoryKey: string; state: string; rank: number }
 ) {
   return Item.create({
+    userId,
     editionId,
     url: `https://example.com/${attributes.title}`,
     urlHash: `hash-${attributes.title}`,
@@ -48,24 +56,26 @@ test.group('Newspaper API', (group) => {
   }) => {
     const user = await reader()
     const edition = await Edition.create({
+      userId: user.id,
       date: today,
       status: 'ready',
       keyLearning: 'Today you learned about consistency.',
     })
-    await makeItem(edition.id, {
+    await makeItem(user.id, edition.id, {
       title: 'Surfaced',
       categoryKey: 'eng-blogs',
       state: 'surfaced',
       rank: 1,
       summary: 'A surfaced summary.',
     })
-    await makeItem(edition.id, {
+    await makeItem(user.id, edition.id, {
       title: 'Reserve',
       categoryKey: 'eng-blogs',
       state: 'reserve',
       rank: 2,
     })
     await QuizQuestion.create({
+      userId: user.id,
       editionId: edition.id,
       topic: 'system design',
       question: 'What is a quorum?',
@@ -98,13 +108,23 @@ test.group('Newspaper API', (group) => {
     response.assertStatus(404)
   })
 
+  test("one reader cannot see another reader's edition", async ({ client }) => {
+    const alice = await reader()
+    await Edition.create({ userId: alice.id, date: today, status: 'ready' })
+
+    // Bob has no edition today, even though Alice does.
+    const bob = await reader()
+    const response = await client.get('/api/v1/editions/today').loginAs(bob)
+    response.assertStatus(404)
+  })
+
   test('rating an item records the rating, marks it seen, and sets its state', async ({
     client,
     assert,
   }) => {
     const user = await reader()
-    const edition = await Edition.create({ date: today, status: 'ready' })
-    const item = await makeItem(edition.id, {
+    const edition = await Edition.create({ userId: user.id, date: today, status: 'ready' })
+    const item = await makeItem(user.id, edition.id, {
       title: 'Rateable',
       categoryKey: 'eng-blogs',
       state: 'surfaced',
@@ -124,6 +144,7 @@ test.group('Newspaper API', (group) => {
 
     const rating = await Rating.findBy('item_id', item.id)
     assert.equal(rating!.stars, 4)
+    assert.equal(rating!.userId, user.id)
     assert.isNull(rating!.learnedAt)
 
     const seen = await SeenUrl.findBy('url_hash', item.urlHash)
@@ -132,8 +153,8 @@ test.group('Newspaper API', (group) => {
 
   test('rejects a rating outside 1–5', async ({ client }) => {
     const user = await reader()
-    const edition = await Edition.create({ date: today, status: 'ready' })
-    const item = await makeItem(edition.id, {
+    const edition = await Edition.create({ userId: user.id, date: today, status: 'ready' })
+    const item = await makeItem(user.id, edition.id, {
       title: 'Rateable',
       categoryKey: 'eng-blogs',
       state: 'surfaced',
@@ -147,17 +168,35 @@ test.group('Newspaper API', (group) => {
     response.assertStatus(422)
   })
 
+  test("one reader cannot rate another reader's item", async ({ client }) => {
+    const alice = await reader()
+    const edition = await Edition.create({ userId: alice.id, date: today, status: 'ready' })
+    const item = await makeItem(alice.id, edition.id, {
+      title: 'Alices',
+      categoryKey: 'eng-blogs',
+      state: 'surfaced',
+      rank: 1,
+    })
+
+    const bob = await reader()
+    const response = await client
+      .post(`/api/v1/items/${item.id}/rate`)
+      .json({ stars: 4 })
+      .loginAs(bob)
+    response.assertStatus(404)
+  })
+
   test('discarding a surfaced item promotes the next reserve', async ({ client, assert }) => {
     const user = await reader()
-    const edition = await Edition.create({ date: today, status: 'ready' })
-    const surfaced = await makeItem(edition.id, {
+    const edition = await Edition.create({ userId: user.id, date: today, status: 'ready' })
+    const surfaced = await makeItem(user.id, edition.id, {
       title: 'Surfaced',
       categoryKey: 'eng-blogs',
       state: 'surfaced',
       rank: 1,
       summary: 'Summary.',
     })
-    const reserve = await makeItem(edition.id, {
+    const reserve = await makeItem(user.id, edition.id, {
       title: 'Reserve',
       categoryKey: 'eng-blogs',
       state: 'reserve',
@@ -184,8 +223,8 @@ test.group('Newspaper API', (group) => {
 
   test('discarding a non-surfaced item is rejected', async ({ client }) => {
     const user = await reader()
-    const edition = await Edition.create({ date: today, status: 'ready' })
-    const reserve = await makeItem(edition.id, {
+    const edition = await Edition.create({ userId: user.id, date: today, status: 'ready' })
+    const reserve = await makeItem(user.id, edition.id, {
       title: 'Reserve',
       categoryKey: 'eng-blogs',
       state: 'reserve',
@@ -201,8 +240,9 @@ test.group('Newspaper API', (group) => {
     assert,
   }) => {
     const user = await reader()
-    const edition = await Edition.create({ date: today, status: 'ready' })
+    const edition = await Edition.create({ userId: user.id, date: today, status: 'ready' })
     const question = await QuizQuestion.create({
+      userId: user.id,
       editionId: edition.id,
       topic: 'system design',
       question: 'What is a quorum?',
@@ -224,6 +264,29 @@ test.group('Newspaper API', (group) => {
     assert.deepEqual(score.body().data, { answered: 1, correct: 0, accuracy: 0 })
   })
 
+  test("the quiz score counts only the reader's own attempts", async ({ client, assert }) => {
+    const alice = await reader()
+    const edition = await Edition.create({ userId: alice.id, date: today, status: 'ready' })
+    const question = await QuizQuestion.create({
+      userId: alice.id,
+      editionId: edition.id,
+      topic: 'system design',
+      question: 'What is a quorum?',
+      options: ['A', 'B', 'C'],
+      correctIndex: 1,
+      explanation: 'Because B.',
+    })
+    await client
+      .post(`/api/v1/quiz/${question.id}/answer`)
+      .json({ selectedIndex: 1 })
+      .loginAs(alice)
+
+    // Bob has answered nothing, so his score is empty.
+    const bob = await reader()
+    const score = await client.get('/api/v1/quiz/score').loginAs(bob)
+    assert.deepEqual(score.body().data, { answered: 0, correct: 0, accuracy: 0 })
+  })
+
   test('submitting a link stores it for tomorrow by default', async ({ client, assert }) => {
     const user = await reader()
 
@@ -234,6 +297,7 @@ test.group('Newspaper API', (group) => {
     response.assertStatus(200)
 
     const link = await SubmittedLink.firstOrFail()
+    assert.equal(link.userId, user.id)
     assert.equal(link.source, 'api')
     assert.equal(link.status, 'pending')
     assert.equal(link.targetDate, DateTime.now().plus({ days: 1 }).toISODate())
