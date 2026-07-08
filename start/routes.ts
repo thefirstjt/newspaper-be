@@ -43,6 +43,12 @@ router
       .group(() => {
         router.get('invitation', [OnboardingController, 'invitation'])
         router.post('accept', [OnboardingController, 'accept'])
+        // Stage 3 needs the reader authenticated (they logged in at accept).
+        router
+          .group(() => {
+            router.post('categories', [OnboardingController, 'categories'])
+          })
+          .use(middleware.auth())
       })
       .prefix('onboarding')
       .as('onboarding')

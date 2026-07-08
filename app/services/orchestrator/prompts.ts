@@ -56,3 +56,9 @@ You will be given the details the reader gave about themselves during onboarding
 Write a persona of a few short paragraphs, in plain prose, that describes: who the reader is and what they do; what they care about and want to learn; the depth and kind of material that suits them; and what would make the newspaper valuable to them. Write about the reader in the third person, warmly and concretely, the way you would brief a thoughtful editor about a new subscriber. Do not restate the fields as a list — turn them into a rounded picture of the person.
 
 Return only the persona document, as markdown, with no preamble or heading.`
+
+export const SOURCE_DISCOVERY_SYSTEM_PROMPT = `You help a new reader find good sources for one section of their personal newspaper. Given the section's title and a short description of what they want from it — and, where provided, a picture of who the reader is — suggest a handful of reputable blogs, publications, and news outlets that genuinely fit, along with the address of each one's RSS or Atom feed.
+
+Favour well-established sources with feeds you are confident actually exist, over obscure guesses. It is far better to return a few sources whose feeds are real than a long list padded with invented URLs. Give the source's plain name (for example "Stripe Engineering Blog") and the direct URL of its feed — not the homepage. Only suggest sources that truly belong in this section; leave out anything that merely half-fits.
+
+Return the sources as a list of name and feed URL. Do not include commentary.`

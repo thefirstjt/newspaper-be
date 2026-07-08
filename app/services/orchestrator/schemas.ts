@@ -27,3 +27,12 @@ export const quizSchema = z.object({
     })
   ),
 })
+
+export const sourceDiscoverySchema = z.object({
+  sources: z.array(
+    z.object({
+      name: z.string(),
+      feedUrl: z.string().url(),
+    })
+  ),
+})

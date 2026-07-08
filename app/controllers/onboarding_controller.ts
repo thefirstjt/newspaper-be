@@ -1,10 +1,21 @@
 import db from '@adonisjs/lucid/services/db'
 import Invitation from '#models/invitation'
 import User from '#models/user'
+import Category from '#models/category'
+import Source from '#models/source'
 import { seedAccountBasics } from '#services/onboarding/user_seeder'
-import { acceptInvitationValidator } from '#validators/onboarding'
+import { contextStoreFor } from '#services/context/context_store_manager'
+import { makeSourceDiscovery } from '#services/onboarding/source_discovery'
+import { acceptInvitationValidator, onboardingCategoriesValidator } from '#validators/onboarding'
+import { presentCategory } from '#transformers/newspaper_presenter'
 import UserTransformer from '#transformers/user_transformer'
 import type { HttpContext } from '@adonisjs/core/http'
+
+// How many items a discovered category surfaces per day, and how deep its pool
+// goes — the same defaults the shipped config uses for its categories.
+const DEFAULT_MIN = 1
+const DEFAULT_MAX = 2
+const DEFAULT_POOL_SIZE = 6
 
 /**
  * The reader-facing onboarding flow, entered through an invitation's magic link.
@@ -62,4 +73,76 @@ export default class OnboardingController {
       token: accessToken.value!.release(),
     })
   }
+
+  /**
+   * Stage 3: the reader names the categories they want, and for each one the
+   * model suggests sources whose feeds we then verify, keeping only the ones
+   * that resolve. Returns the categories with their sources — the stage-4 view.
+   * This runs synchronously for now; a future version would queue the discovery
+   * per category and notify when it is ready.
+   */
+  async categories({ auth, request, serialize }: HttpContext) {
+    const user = auth.use('api').getUserOrFail()
+    const { categories } = await request.validateUsing(onboardingCategoriesValidator)
+
+    const persona = await contextStoreFor(user.id).read('persona')
+    const discovery = makeSourceDiscovery()
+    const existing = await Category.query().where('user_id', user.id)
+    const takenKeys = new Set(existing.map((category) => category.key))
+
+    const created: Category[] = []
+    for (const input of categories) {
+      const key = uniqueSlug(input.title, takenKeys)
+      takenKeys.add(key)
+
+      const category = await Category.create({
+        userId: user.id,
+        key,
+        title: input.title,
+        min: DEFAULT_MIN,
+        max: DEFAULT_MAX,
+        poolSize: DEFAULT_POOL_SIZE,
+        relevanceHint: input.description ?? input.title,
+      })
+
+      const sources = await discovery.discoverVerified({
+        categoryTitle: category.title,
+        relevanceHint: category.relevanceHint,
+        persona,
+      })
+      for (const source of sources) {
+        await Source.create({
+          userId: user.id,
+          categoryId: category.id,
+          type: 'rss',
+          name: source.name,
+          settings: { feedUrl: source.feedUrl },
+          enabled: true,
+        })
+      }
+
+      await category.load('sources')
+      created.push(category)
+    }
+
+    return serialize({ categories: created.map((category) => presentCategory(category)) })
+  }
+}
+
+/** Turns a title into a slug unique among the reader's category keys. */
+function uniqueSlug(title: string, taken: Set<string>): string {
+  const base =
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'category'
+
+  if (!taken.has(base)) {
+    return base
+  }
+  let suffix = 2
+  while (taken.has(`${base}-${suffix}`)) {
+    suffix += 1
+  }
+  return `${base}-${suffix}`
 }
