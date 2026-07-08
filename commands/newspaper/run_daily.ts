@@ -8,14 +8,17 @@ import UserSetting from '#models/user_setting'
 import type Edition from '#models/edition'
 import { createEditionBuilder } from '#services/edition/edition_builder'
 import { createPreferenceLearner } from '#services/preferences/preference_learner'
-import { editionMailerForSettings } from '#services/email/edition_mailer'
+import { editionMailerForUser } from '#services/email/edition_mailer'
 import { resolveUser } from '#services/support/resolve_user'
+import { isSendDay } from '#services/support/email_schedule'
 
 /**
  * Builds and emails each active reader's edition for a day: it scouts their
  * sources, ranks and summarises the picks, saves the edition, and emails it.
- * Runs for every active user by default; pass --user to run for one. Defaults to
- * today; pass --date to (re)build a specific day, and --no-email to skip email.
+ * Runs for every active user by default, skipping those whose email frequency
+ * does not fall on this day; pass --user to run for one reader regardless.
+ * Defaults to today; pass --date to (re)build a specific day, and --no-email to
+ * skip email.
  */
 export default class RunDaily extends BaseCommand {
   static commandName = 'newspaper:run-daily'
@@ -47,6 +50,17 @@ export default class RunDaily extends BaseCommand {
     }
 
     for (const user of users) {
+      // On the automated all-users run, only build for readers whose email
+      // frequency lands on this day. An explicit --user always runs.
+      if (!this.user) {
+        const settings = await UserSetting.findBy('user_id', user.id)
+        const frequency = settings?.emailFrequency ?? 'daily'
+        if (!isSendDay(frequency, date)) {
+          this.logger.info(`Skipping ${user.email} — not their ${frequency} send day.`)
+          continue
+        }
+      }
+
       this.logger.info(`Building edition for ${user.email} (${date})…`)
       await this.runForUser(user, date)
     }
@@ -101,7 +115,7 @@ export default class RunDaily extends BaseCommand {
     }
 
     try {
-      await editionMailerForSettings(settings).deliver(edition)
+      await editionMailerForUser(user).deliver(edition)
       this.logger.success('  Emailed the edition to the reader.')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

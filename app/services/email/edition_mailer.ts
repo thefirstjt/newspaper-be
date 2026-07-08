@@ -4,7 +4,7 @@ import env from '#start/env'
 import { renderEditionEmail, editionSubject } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
 import type Edition from '#models/edition'
-import type UserSetting from '#models/user_setting'
+import type User from '#models/user'
 
 /*
  * SMTP is kept as a second option, commented out for now. The `@adonisjs/mail`
@@ -111,10 +111,10 @@ export class EditionMailer {
   }
 }
 
-/** Builds an edition mailer that sends to the address in a reader's settings. */
-export function editionMailerForSettings(settings: UserSetting): EditionMailer {
+/** Builds an edition mailer that sends to the reader's own email and name. */
+export function editionMailerForUser(user: User): EditionMailer {
   return new EditionMailer({
-    recipient: settings.emailRecipient,
-    recipientName: settings.emailRecipientName,
+    recipient: user.email,
+    recipientName: user.name ?? 'there',
   })
 }

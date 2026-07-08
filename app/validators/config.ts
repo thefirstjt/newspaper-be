@@ -10,8 +10,7 @@ export const scheduleValidator = vine.create({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
   emailEnabled: vine.boolean().optional(),
-  emailRecipient: vine.string().email().maxLength(254).nullable().optional(),
-  emailRecipientName: vine.string().trim().maxLength(100).nullable().optional(),
+  emailFrequency: vine.enum(['daily', 'weekly', 'monthly']).optional(),
 })
 
 /** The full replacement list of a reader's learning-gap topics. */

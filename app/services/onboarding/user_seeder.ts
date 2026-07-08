@@ -27,8 +27,7 @@ export async function seedNewUser(user: User, trx: TransactionClientContract): P
       quizMax: newspaperConfig.quiz.max,
       runTime: newspaperConfig.schedule.runTime,
       emailEnabled: newspaperConfig.schedule.emailEnabled,
-      emailRecipient: user.email,
-      emailRecipientName: user.name ?? 'there',
+      emailFrequency: 'daily',
     },
     { client: trx }
   )

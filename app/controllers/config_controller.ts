@@ -70,12 +70,7 @@ export default class ConfigController {
     settings.merge({
       runTime: changes.runTime ?? settings.runTime,
       emailEnabled: changes.emailEnabled ?? settings.emailEnabled,
-      emailRecipient:
-        changes.emailRecipient === undefined ? settings.emailRecipient : changes.emailRecipient,
-      emailRecipientName:
-        changes.emailRecipientName === undefined
-          ? settings.emailRecipientName
-          : changes.emailRecipientName,
+      emailFrequency: changes.emailFrequency ?? settings.emailFrequency,
     })
     await settings.save()
 
@@ -113,7 +108,6 @@ function presentSchedule(settings: UserSetting) {
   return {
     runTime: settings.runTime,
     emailEnabled: settings.emailEnabled,
-    emailRecipient: settings.emailRecipient,
-    emailRecipientName: settings.emailRecipientName,
+    emailFrequency: settings.emailFrequency,
   }
 }

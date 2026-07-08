@@ -27,11 +27,9 @@ export default class UserSetting extends BaseModel {
   @column()
   declare emailEnabled: boolean
 
+  /** How often to email the reader: 'daily', 'weekly' or 'monthly'. */
   @column()
-  declare emailRecipient: string | null
-
-  @column()
-  declare emailRecipientName: string | null
+  declare emailFrequency: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

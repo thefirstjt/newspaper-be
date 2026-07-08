@@ -43,7 +43,7 @@ test.group('signup seeding', (group) => {
 
     const settings = await UserSetting.findBy('user_id', user.id)
     assert.isNotNull(settings)
-    assert.equal(settings!.emailRecipient, 'new@example.com')
+    assert.equal(settings!.emailFrequency, 'daily')
 
     const documents = await ReaderDocument.query().where('user_id', user.id)
     assert.lengthOf(documents, 3)

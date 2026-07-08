@@ -21,8 +21,8 @@ export default class extends BaseSchema {
       table.integer('quiz_max').notNullable()
       table.string('run_time').notNullable()
       table.boolean('email_enabled').notNullable().defaultTo(true)
-      table.string('email_recipient').nullable()
-      table.string('email_recipient_name').nullable()
+      // How often the reader is emailed: 'daily', 'weekly' or 'monthly'.
+      table.string('email_frequency').notNullable().defaultTo('daily')
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()

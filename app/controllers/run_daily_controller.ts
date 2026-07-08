@@ -2,7 +2,7 @@ import { DateTime } from 'luxon'
 import UserSetting from '#models/user_setting'
 import { createEditionBuilder } from '#services/edition/edition_builder'
 import { createPreferenceLearner } from '#services/preferences/preference_learner'
-import { editionMailerForSettings } from '#services/email/edition_mailer'
+import { editionMailerForUser } from '#services/email/edition_mailer'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -23,7 +23,7 @@ export default class RunDailyController {
 
     const settings = await UserSetting.findBy('user_id', user.id)
     if (settings?.emailEnabled) {
-      await editionMailerForSettings(settings).deliver(edition)
+      await editionMailerForUser(user).deliver(edition)
     }
 
     return serialize({

@@ -2,8 +2,7 @@ import { BaseCommand, flags } from '@adonisjs/core/ace'
 import type { CommandOptions } from '@adonisjs/core/types/ace'
 import { DateTime } from 'luxon'
 import Edition from '#models/edition'
-import UserSetting from '#models/user_setting'
-import { editionMailerForSettings } from '#services/email/edition_mailer'
+import { editionMailerForUser } from '#services/email/edition_mailer'
 import { resolveUser } from '#services/support/resolve_user'
 
 /**
@@ -40,8 +39,7 @@ export default class SendEdition extends BaseCommand {
     }
 
     try {
-      const settings = await UserSetting.findByOrFail('user_id', user.id)
-      await editionMailerForSettings(settings).deliver(edition)
+      await editionMailerForUser(user).deliver(edition)
       this.logger.success(`Emailed the edition for ${user.email} on ${date}.`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
