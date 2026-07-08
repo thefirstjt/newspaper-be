@@ -36,39 +36,72 @@ export async function seedNewUser(user: User, trx: TransactionClientContract): P
     await GapTopic.create({ userId: user.id, topic, position }, { client: trx })
   }
 
-  for (const category of newspaperConfig.categories) {
-    const created = await Category.create(
-      {
-        userId: user.id,
-        key: category.key,
-        title: category.title,
-        min: category.min,
-        max: category.max,
-        poolSize: category.poolSize,
-        relevanceHint: category.relevanceHint,
-      },
-      { client: trx }
-    )
-
-    for (const source of category.sources) {
-      await Source.create(
-        {
-          userId: user.id,
-          categoryId: created.id,
-          type: source.type,
-          name: source.name,
-          settings: source.settings,
-          enabled: true,
-        },
-        { client: trx }
-      )
-    }
-  }
+  await seedDefaultCategories(user, trx)
 
   for (const document of READER_DOCUMENTS) {
     const content = await readTemplate(document.filename)
     await ReaderDocument.create({ userId: user.id, key: document.key, content }, { client: trx })
   }
+}
+
+/**
+ * Ensures a user has the default categories and their sources from
+ * config/newspaper.ts. It is idempotent: a category already present (by key) is
+ * left alone, and a source already present (by name within its category) is
+ * skipped — so it can seed a brand-new user or top up an existing one. Returns
+ * how many of each were added.
+ */
+export async function seedDefaultCategories(
+  user: User,
+  trx: TransactionClientContract
+): Promise<{ categoriesAdded: number; sourcesAdded: number }> {
+  let categoriesAdded = 0
+  let sourcesAdded = 0
+
+  for (const category of newspaperConfig.categories) {
+    let created = await Category.query({ client: trx })
+      .where('user_id', user.id)
+      .where('key', category.key)
+      .first()
+    if (!created) {
+      created = await Category.create(
+        {
+          userId: user.id,
+          key: category.key,
+          title: category.title,
+          min: category.min,
+          max: category.max,
+          poolSize: category.poolSize,
+          relevanceHint: category.relevanceHint,
+        },
+        { client: trx }
+      )
+      categoriesAdded += 1
+    }
+
+    for (const source of category.sources) {
+      const exists = await Source.query({ client: trx })
+        .where('category_id', created.id)
+        .where('name', source.name)
+        .first()
+      if (!exists) {
+        await Source.create(
+          {
+            userId: user.id,
+            categoryId: created.id,
+            type: source.type,
+            name: source.name,
+            settings: source.settings,
+            enabled: true,
+          },
+          { client: trx }
+        )
+        sourcesAdded += 1
+      }
+    }
+  }
+
+  return { categoriesAdded, sourcesAdded }
 }
 
 /** Reads a reader-context template shipped under resources/context/. */

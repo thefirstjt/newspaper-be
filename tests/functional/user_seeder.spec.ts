@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
 import type { ApiClient } from '@japa/api-client'
 import testUtils from '@adonisjs/core/services/test_utils'
+import db from '@adonisjs/lucid/services/db'
 import newspaperConfig from '#config/newspaper'
+import { seedDefaultCategories } from '#services/onboarding/user_seeder'
 import User from '#models/user'
 import Category from '#models/category'
 import Source from '#models/source'
@@ -62,5 +64,18 @@ test.group('signup seeding', (group) => {
     // No overlap: every category row belongs to exactly one of them.
     const allCategories = await Category.all()
     assert.lengthOf(allCategories, aliceCategories.length + bobCategories.length)
+  })
+
+  test('re-seeding an already-seeded user adds nothing', async ({ client, assert }) => {
+    const user = await signUp(client, 'again@example.com')
+
+    const result = await db.transaction((trx) => seedDefaultCategories(user, trx))
+
+    assert.equal(result.categoriesAdded, 0)
+    assert.equal(result.sourcesAdded, 0)
+    assert.lengthOf(
+      await Category.query().where('user_id', user.id),
+      newspaperConfig.categories.length
+    )
   })
 })
