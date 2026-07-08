@@ -22,12 +22,14 @@ export class SeenUrlStore implements SeenUrlGate {
   }
 
   /**
-   * Records the given candidates as seen, skipping any already on record. A
-   * transaction client can be passed so the write is part of a larger unit of
-   * work (such as saving an edition).
+   * Records the given urls as seen, skipping any already on record. It accepts
+   * anything carrying a url and its hash — a scouted candidate or a stored item
+   * — so both the scout and the API can burn a url once it has been shown or
+   * rated. A transaction client can be passed so the write is part of a larger
+   * unit of work (such as saving an edition).
    */
   async markSeen(
-    candidates: ScoutedCandidate[],
+    candidates: Array<Pick<ScoutedCandidate, 'url' | 'urlHash'>>,
     client?: TransactionClientContract
   ): Promise<void> {
     if (candidates.length === 0) {
