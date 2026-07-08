@@ -10,6 +10,7 @@ export const controllers = {
   Items: () => import('#controllers/items_controller'),
   Links: () => import('#controllers/links_controller'),
   NewAccount: () => import('#controllers/new_account_controller'),
+  Persona: () => import('#controllers/persona_controller'),
   Profile: () => import('#controllers/profile_controller'),
   Quiz: () => import('#controllers/quiz_controller'),
   RunDaily: () => import('#controllers/run_daily_controller'),

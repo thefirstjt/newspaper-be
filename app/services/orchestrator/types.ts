@@ -95,3 +95,29 @@ export interface ReviseDocumentInput {
   /** A plain-language description of what we have recently observed about the reader. */
   observations: string
 }
+
+/**
+ * What a reader tells us about themselves during onboarding, from which the
+ * model writes their persona document. Only the role and the fields they want to
+ * learn are required; the rest sharpen the picture when given.
+ */
+export interface PersonaInput {
+  /** Their line of work or job title. */
+  role: string
+  /** The industry or domain they work in. */
+  industry?: string | null
+  /** How experienced they are (e.g. 'junior', 'senior', '10 years'). */
+  experienceLevel?: string | null
+  /** The fields or topics they want to learn about. */
+  learningGoals: string[]
+  /** Topics they enjoy reading about. */
+  interests?: string[]
+  /** In their own words, what they want to get out of the newspaper. */
+  goals?: string | null
+  /** How deep they like to go: 'deep', 'balanced' or 'high-level'. */
+  preferredDepth?: string | null
+  /** Topics or kinds of content they would rather not see. */
+  avoid?: string[]
+  /** Where they are, for local relevance. */
+  location?: string | null
+}

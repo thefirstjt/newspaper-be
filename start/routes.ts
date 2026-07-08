@@ -17,6 +17,7 @@ const QuizController = () => import('#controllers/quiz_controller')
 const LinksController = () => import('#controllers/links_controller')
 const RunDailyController = () => import('#controllers/run_daily_controller')
 const ConfigController = () => import('#controllers/config_controller')
+const PersonaController = () => import('#controllers/persona_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -52,6 +53,7 @@ router
         router.get('quiz/score', [QuizController, 'score'])
         router.post('quiz/:id/answer', [QuizController, 'answer'])
         router.post('links', [LinksController, 'store'])
+        router.put('persona', [PersonaController, 'update'])
         router.post('run-daily', [RunDailyController, 'store'])
         router.get('config/sources', [ConfigController, 'sources'])
         router.get('config/categories', [ConfigController, 'categories'])
