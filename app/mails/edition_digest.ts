@@ -1,20 +1,43 @@
 import { BaseMail } from '@adonisjs/mail'
+import { DateTime } from 'luxon'
 import type { presentEdition } from '#transformers/newspaper_presenter'
 
 /** The shape of the edition passed to the email, straight from the presenter. */
 type EditionView = ReturnType<typeof presentEdition>
+type CategoryView = EditionView['categories'][number]
+type ItemView = CategoryView['items'][number]
+
+/*
+ * The brand palette (Percussion Labs) and typography. Headlines are set in Lora
+ * — a serif that reads as confident and elegant — and everything else in Geist.
+ * Email clients that block web fonts fall back to Georgia and the system sans,
+ * which keep the same serif/sans feel.
+ */
+const PURPLE = '#A676FC'
+const NAVY = '#1E1647'
+const DEEP_PURPLE = '#4C398F'
+const LAVENDER_LINE = '#EDE7FB'
+const PAGE_BG = '#F1F1F1'
+const BODY_TEXT = '#4A4560'
+const MUTED_TEXT = '#9B93B5'
+
+const HEAD_FONT = "'Lora', Georgia, 'Times New Roman', serif"
+const BODY_FONT =
+  "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
 /**
- * The daily edition, delivered by email. It shows the same thing the reader
- * would see for the day — the key learning, the surfaced items grouped by
- * category, and the quiz — and ends with a button through to the app, where
- * they can read in full, rate, discard and answer the quiz.
+ * The daily edition, delivered by email. It opens with a short greeting and
+ * then the day's news, grouped by category, and ends with a button through to
+ * the app — where the reader can read in full, rate, discard, and take the
+ * quiz. The key learning and quiz are deliberately kept out of the email to
+ * keep it a light, scannable brief.
  */
 export default class EditionDigest extends BaseMail {
   constructor(
     private edition: EditionView,
     private recipient: string,
-    private appUrl: string
+    private appUrl: string,
+    private recipientName: string
   ) {
     super()
   }
@@ -22,103 +45,127 @@ export default class EditionDigest extends BaseMail {
   prepare() {
     this.message
       .to(this.recipient)
-      .subject(`Your newspaper for ${this.edition.date}`)
-      .html(renderEditionEmail(this.edition, this.appUrl))
+      .subject(`Your news for ${formatDate(this.edition.date)}`)
+      .html(renderEditionEmail(this.edition, this.appUrl, this.recipientName))
   }
 }
 
 /** Builds the email's HTML from the day's edition. */
-export function renderEditionEmail(edition: EditionView, appUrl: string): string {
-  const sections = edition.categories
-    .map((category) => {
-      const items = category.items.map((item) => renderItem(item)).join('')
-      return `
-        <h2 style="font-size:18px;margin:32px 0 12px;color:#111;">${escapeHtml(category.title)}</h2>
-        ${items}
-      `
-    })
-    .join('')
+export function renderEditionEmail(
+  edition: EditionView,
+  appUrl: string,
+  recipientName: string
+): string {
+  const sections = edition.categories.map((category) => renderCategory(category)).join('')
 
   return `<!doctype html>
-<html>
-  <body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111;">
-    <div style="max-width:640px;margin:0 auto;padding:24px;">
-      <div style="background:#fff;border-radius:12px;padding:32px;">
-        <p style="margin:0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.08em;">Your Daily Newspaper</p>
-        <h1 style="margin:4px 0 0;font-size:24px;color:#111;">${escapeHtml(edition.date)}</h1>
-
-        ${renderKeyLearning(edition.keyLearning)}
-        ${sections}
-        ${renderQuiz(edition.quiz)}
-
-        <div style="text-align:center;margin:40px 0 8px;">
-          <a href="${escapeAttribute(appUrl)}"
-             style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:600;">
-            Open the newspaper
-          </a>
-        </div>
-      </div>
-      <p style="text-align:center;color:#9ca3af;font-size:12px;margin:16px 0 0;">
-        Rate stories, discard what you don't like, and take the quiz in the app.
-      </p>
-    </div>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>See Newspaper</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; padding:0; background:${PAGE_BG}; -webkit-font-smoothing:antialiased; }
+    a { text-decoration:none; }
+    @media (max-width:620px) {
+      .container { width:100% !important; }
+      .px { padding-left:24px !important; padding-right:24px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:${PAGE_BG};">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${PAGE_BG};">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;">
+          <tr>
+            <td style="height:6px;line-height:6px;font-size:6px;background:${PURPLE};">&nbsp;</td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:36px 40px 0;">
+              <p style="margin:0;font-family:${BODY_FONT};font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:${PURPLE};">See Newspaper</p>
+              <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(formatDate(edition.date))}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:22px 40px 0;">
+              <p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${DEEP_PURPLE};">Hi ${escapeHtml(recipientName)}, here's your news for today:</p>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:4px 40px 0;">
+              ${sections || renderEmptyState()}
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:28px 40px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:10px;background:${PURPLE};">
+                    <a href="${escapeAttribute(appUrl)}" style="display:inline-block;padding:14px 30px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#ffffff;border-radius:10px;">Visit Newspaper</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="600" class="container" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
+          <tr>
+            <td class="px" style="padding:20px 40px;text-align:center;font-family:${BODY_FONT};font-size:12px;line-height:1.6;color:${MUTED_TEXT};">
+              Curated for you by See Newspaper · Percussion Labs
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
 </html>`
 }
 
-function renderKeyLearning(keyLearning: string | null): string {
-  if (!keyLearning) {
-    return ''
-  }
+/** One category section: a small label, a divider, then its stories. */
+function renderCategory(category: CategoryView): string {
+  const items = category.items.map((item) => renderItem(item)).join('')
   return `
-    <div style="background:#f9fafb;border-left:3px solid #111;border-radius:6px;padding:16px 20px;margin:24px 0;">
-      <p style="margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;">Today's key learning</p>
-      <p style="margin:0;font-size:15px;line-height:1.6;color:#111;">${escapeHtml(keyLearning)}</p>
+    <div style="margin-top:32px;">
+      <p style="margin:0 0 10px;font-family:${BODY_FONT};font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:${PURPLE};">${escapeHtml(category.title)}</p>
+      ${items}
     </div>
   `
 }
 
-function renderItem(item: EditionView['categories'][number]['items'][number]): string {
-  const source = item.source ? `<span style="color:#6b7280;">${escapeHtml(item.source)}</span>` : ''
+/** One story: headline (a link), its source, and the summary. */
+function renderItem(item: ItemView): string {
+  const source = item.source
+    ? `<p style="margin:8px 0 0;font-family:${BODY_FONT};font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:${PURPLE};">${escapeHtml(item.source)}</p>`
+    : ''
   const summary = item.summary
-    ? `<p style="margin:6px 0 0;font-size:14px;line-height:1.6;color:#374151;">${escapeHtml(item.summary)}</p>`
+    ? `<p style="margin:8px 0 0;font-family:${BODY_FONT};font-size:14px;line-height:1.65;color:${BODY_TEXT};">${escapeHtml(item.summary)}</p>`
     : ''
   return `
-    <div style="padding:14px 0;border-bottom:1px solid #f0f0f0;">
-      <a href="${escapeAttribute(item.url)}" style="font-size:16px;font-weight:600;color:#111;text-decoration:none;">
-        ${escapeHtml(item.title)}
-      </a>
-      <div style="margin-top:4px;font-size:13px;">${source}</div>
-      ${summary}
-    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${LAVENDER_LINE};">
+      <tr>
+        <td style="padding:18px 0;">
+          <a href="${escapeAttribute(item.url)}" style="font-family:${HEAD_FONT};font-size:20px;line-height:1.3;font-weight:600;color:${NAVY};">${escapeHtml(item.title)}</a>
+          ${source}
+          ${summary}
+        </td>
+      </tr>
+    </table>
   `
 }
 
-function renderQuiz(quiz: EditionView['quiz']): string {
-  if (quiz.length === 0) {
-    return ''
-  }
-  const questions = quiz
-    .map((question, index) => {
-      const options = question.options
-        .map((option) => `<li style="margin:2px 0;color:#374151;">${escapeHtml(option)}</li>`)
-        .join('')
-      return `
-        <div style="margin:16px 0;">
-          <p style="margin:0 0 6px;font-size:15px;font-weight:600;color:#111;">
-            ${index + 1}. ${escapeHtml(question.question)}
-          </p>
-          <ul style="margin:0;padding-left:20px;font-size:14px;">${options}</ul>
-        </div>
-      `
-    })
-    .join('')
+/** Shown on the rare day nothing was surfaced, so the email is never blank. */
+function renderEmptyState(): string {
+  return `<p style="margin:24px 0 0;font-family:${BODY_FONT};font-size:15px;line-height:1.6;color:${BODY_TEXT};">Nothing made the cut today — check back tomorrow.</p>`
+}
 
-  return `
-    <h2 style="font-size:18px;margin:32px 0 4px;color:#111;">Today's quiz</h2>
-    <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Answer in the app to see how you did.</p>
-    ${questions}
-  `
+/** Turns a 'YYYY-MM-DD' date into something like "Wednesday, 8 July 2026". */
+function formatDate(date: string): string {
+  const parsed = DateTime.fromISO(date)
+  return parsed.isValid ? parsed.toFormat('cccc, d LLLL yyyy') : date
 }
 
 /** Escapes text placed into element content. */

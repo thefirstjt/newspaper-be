@@ -54,6 +54,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_USERNAME: Env.schema.string.optional(),
   SMTP_FROM: Env.schema.string.optional(),
   EMAIL_RECIPIENT: Env.schema.string.optional(),
+  // The reader's name, used to greet them in the email (e.g. "Hi Tomiwa,").
+  EMAIL_RECIPIENT_NAME: Env.schema.string.optional(),
 
   // Language models. Each task (ranking, summary, generation) picks its own
   // provider and model, so they can be mixed and matched. Only the keys for the

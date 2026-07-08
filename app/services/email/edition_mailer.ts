@@ -57,11 +57,15 @@ export class ResendEmailSender implements EmailSender {
  * the environment / Resend, but can be passed in — mainly so tests can capture
  * the email without touching the network.
  */
+/** The sender's display name, shown in the reader's inbox before the address. */
+const FROM_NAME = 'See Newspaper'
+
 export class EditionMailer {
   constructor(
     private recipient = env.get('EMAIL_RECIPIENT'),
     private appUrl = env.get('APP_URL'),
-    private from = env.get('SMTP_FROM', 'newspaper@percussionlabs.ai'),
+    private fromAddress = env.get('SMTP_FROM', 'newspaper@percussionlabs.ai'),
+    private recipientName = env.get('EMAIL_RECIPIENT_NAME', 'there'),
     private sender: EmailSender = new ResendEmailSender()
   ) {}
 
@@ -78,10 +82,10 @@ export class EditionMailer {
     const view = presentEdition(edition, edition.items, edition.quizQuestions)
 
     await this.sender.send({
-      from: this.from,
+      from: `${FROM_NAME} <${this.fromAddress}>`,
       to: this.recipient,
-      subject: `Your newspaper for ${edition.date}`,
-      html: renderEditionEmail(view, this.appUrl),
+      subject: `Your news for ${edition.date}`,
+      html: renderEditionEmail(view, this.appUrl, this.recipientName),
     })
 
     edition.status = 'emailed'

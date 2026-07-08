@@ -80,15 +80,17 @@ test.group('EditionMailer', (group) => {
       'reader@example.com',
       'https://app.example.com',
       'newspaper@percussionlabs.ai',
+      'Tomiwa',
       sender
     ).deliver(edition)
 
     assert.lengthOf(sender.sent, 1)
     const message = sender.sent[0]
     assert.equal(message.to, 'reader@example.com')
-    assert.equal(message.from, 'newspaper@percussionlabs.ai')
-    assert.equal(message.subject, 'Your newspaper for 2026-06-21')
+    assert.equal(message.from, 'See Newspaper <newspaper@percussionlabs.ai>')
+    assert.equal(message.subject, 'Your news for 2026-06-21')
     assert.include(message.html, 'A surfaced story')
+    assert.include(message.html, "Hi Tomiwa, here's your news for today:")
 
     await edition.refresh()
     assert.equal(edition.status, 'emailed')
@@ -105,6 +107,7 @@ test.group('EditionMailer', (group) => {
           '',
           'https://app.example.com',
           'newspaper@percussionlabs.ai',
+          'Tomiwa',
           sender
         ).deliver(edition),
       /EMAIL_RECIPIENT/
@@ -112,7 +115,7 @@ test.group('EditionMailer', (group) => {
     assert.lengthOf(sender.sent, 0)
   })
 
-  test('the email shows surfaced items, key learning, quiz, and the app button', async ({
+  test('the email shows surfaced items and the app button, but not the quiz or key learning', async ({
     assert,
   }) => {
     const edition = await editionWithContent('2026-06-21')
@@ -123,13 +126,16 @@ test.group('EditionMailer', (group) => {
 
     const html = renderEditionEmail(
       presentEdition(edition, edition.items, edition.quizQuestions),
-      'https://app.example.com'
+      'https://app.example.com',
+      'Tomiwa'
     )
 
     assert.include(html, 'A surfaced story')
-    assert.include(html, 'Today you learned about quorums.')
-    assert.include(html, 'What is a quorum?')
+    assert.include(html, 'Visit Newspaper')
     assert.include(html, 'href="https://app.example.com"')
+    // The quiz and key learning are deliberately left out of the email.
+    assert.notInclude(html, 'Today you learned about quorums.')
+    assert.notInclude(html, 'What is a quorum?')
     // Reserves are never shown in the email.
     assert.notInclude(html, 'A reserve story')
   })

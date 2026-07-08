@@ -16,7 +16,7 @@ const mailConfig = defineConfig({
 
   from: {
     address: env.get('SMTP_FROM', 'newspaper@percussionlabs.ai'),
-    name: 'The Daily Newspaper',
+    name: 'See Newspaper',
   },
 
   mailers: {
