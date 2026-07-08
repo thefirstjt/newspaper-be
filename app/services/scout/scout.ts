@@ -1,5 +1,4 @@
 import env from '#start/env'
-import newspaperConfig from '#config/newspaper'
 import type { CategoryConfig, SourceType } from '#config/newspaper'
 import { RssFetcher } from '#services/scout/rss_fetcher'
 import { YoutubeFetcher } from '#services/scout/youtube_fetcher'
@@ -29,7 +28,7 @@ export class Scout {
     private seenUrls: SeenUrlGate
   ) {}
 
-  async scout(categories: CategoryConfig[] = newspaperConfig.categories): Promise<ScoutResult> {
+  async scout(categories: CategoryConfig[]): Promise<ScoutResult> {
     const gathered: ScoutedCandidate[] = []
     const failures: ScoutFailure[] = []
 
@@ -59,11 +58,12 @@ export class Scout {
 }
 
 /**
- * Builds a scout with the fetchers the environment can support. RSS always
- * works; YouTube and X are only wired up when their API keys are configured, so
- * sources of those types are simply skipped otherwise.
+ * Builds a scout for one reader with the fetchers the environment can support.
+ * RSS always works; YouTube and X are only wired up when their API keys are
+ * configured, so sources of those types are simply skipped otherwise. The
+ * seen-url and X-account caches are scoped to the reader.
  */
-export function createScout(): Scout {
+export function createScout(userId: string): Scout {
   const fetchers: Partial<Record<SourceType, SourceFetcher>> = {
     rss: new RssFetcher(),
   }
@@ -75,10 +75,10 @@ export function createScout(): Scout {
 
   const xApiKey = env.get('X_API_KEY')
   if (xApiKey) {
-    fetchers.x = new XFetcher(xApiKey, new XAccountStore())
+    fetchers.x = new XFetcher(xApiKey, new XAccountStore(userId))
   }
 
-  return new Scout(fetchers, new SeenUrlStore())
+  return new Scout(fetchers, new SeenUrlStore(userId))
 }
 
 function toScoutedCandidate(candidate: RawCandidate, categoryKey: string): ScoutedCandidate {

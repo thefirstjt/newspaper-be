@@ -4,18 +4,21 @@ import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import type { ScoutedCandidate, SeenUrlGate } from '#services/scout/types'
 
 /**
- * The permanent record of every url already shown to or rated by the reader.
+ * One reader's permanent record of every url already shown to or rated by them.
  * The scout uses it to drop stories that have come around before; the edition
- * builder adds to it when an item is surfaced.
+ * builder adds to it when an item is surfaced. Every read and write is scoped to
+ * the reader, so each user has an independent seen set.
  */
 export class SeenUrlStore implements SeenUrlGate {
+  constructor(private userId: string) {}
+
   async filterUnseen(candidates: ScoutedCandidate[]): Promise<ScoutedCandidate[]> {
     if (candidates.length === 0) {
       return []
     }
 
     const hashes = candidates.map((candidate) => candidate.urlHash)
-    const seen = await SeenUrl.query().whereIn('url_hash', hashes)
+    const seen = await SeenUrl.query().where('user_id', this.userId).whereIn('url_hash', hashes)
     const seenHashes = new Set(seen.map((row) => row.urlHash))
 
     return candidates.filter((candidate) => !seenHashes.has(candidate.urlHash))
@@ -37,12 +40,15 @@ export class SeenUrlStore implements SeenUrlGate {
     }
 
     const hashes = candidates.map((candidate) => candidate.urlHash)
-    const existing = await SeenUrl.query({ client }).whereIn('url_hash', hashes)
+    const existing = await SeenUrl.query({ client })
+      .where('user_id', this.userId)
+      .whereIn('url_hash', hashes)
     const existingHashes = new Set(existing.map((row) => row.urlHash))
 
     const rows = candidates
       .filter((candidate) => !existingHashes.has(candidate.urlHash))
       .map((candidate) => ({
+        userId: this.userId,
         urlHash: candidate.urlHash,
         url: candidate.url,
         firstSeenAt: DateTime.now(),

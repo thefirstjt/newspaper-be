@@ -4,6 +4,7 @@ import env from '#start/env'
 import { renderEditionEmail, editionSubject } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
 import type Edition from '#models/edition'
+import type UserSetting from '#models/user_setting'
 
 /*
  * SMTP is kept as a second option, commented out for now. The `@adonisjs/mail`
@@ -48,26 +49,42 @@ export class ResendEmailSender implements EmailSender {
   }
 }
 
-/**
- * Sends the day's edition to the reader by email. It gathers the surfaced items
- * and the quiz, renders them into the digest, sends it, and marks the edition
- * as emailed so a re-run does not send it twice by accident.
- *
- * The recipient, sender, app url and the underlying email sender all default to
- * the environment / Resend, but can be passed in — mainly so tests can capture
- * the email without touching the network.
- */
 /** The sender's display name, shown in the reader's inbox before the address. */
 const FROM_NAME = 'See Newspaper'
 
+/**
+ * Who an edition is sent to and how it is rendered. The recipient and their name
+ * come from the reader's settings; the app url, sender address and the email
+ * sender itself default to the environment / Resend, but can be passed in —
+ * mainly so tests can capture the email without touching the network.
+ */
+export interface EditionMailerOptions {
+  recipient?: string | null
+  recipientName?: string | null
+  appUrl?: string
+  fromAddress?: string
+  sender?: EmailSender
+}
+
+/**
+ * Sends a reader's edition by email. It gathers the surfaced items, renders them
+ * into the digest, sends it, and marks the edition as emailed so a re-run does
+ * not send it twice by accident.
+ */
 export class EditionMailer {
-  constructor(
-    private recipient = env.get('EMAIL_RECIPIENT'),
-    private appUrl = env.get('APP_URL'),
-    private fromAddress = env.get('SMTP_FROM', 'newspaper@percussionlabs.ai'),
-    private recipientName = env.get('EMAIL_RECIPIENT_NAME', 'there'),
-    private sender: EmailSender = new ResendEmailSender()
-  ) {}
+  private recipient: string | null
+  private recipientName: string
+  private appUrl: string
+  private fromAddress: string
+  private sender: EmailSender
+
+  constructor(options: EditionMailerOptions = {}) {
+    this.recipient = options.recipient ?? env.get('EMAIL_RECIPIENT') ?? null
+    this.recipientName = options.recipientName ?? env.get('EMAIL_RECIPIENT_NAME', 'there')
+    this.appUrl = options.appUrl ?? env.get('APP_URL')
+    this.fromAddress = options.fromAddress ?? env.get('SMTP_FROM', 'newspaper@percussionlabs.ai')
+    this.sender = options.sender ?? new ResendEmailSender()
+  }
 
   async deliver(edition: Edition): Promise<void> {
     if (!this.recipient) {
@@ -92,4 +109,12 @@ export class EditionMailer {
     edition.emailedAt = DateTime.now()
     await edition.save()
   }
+}
+
+/** Builds an edition mailer that sends to the address in a reader's settings. */
+export function editionMailerForSettings(settings: UserSetting): EditionMailer {
+  return new EditionMailer({
+    recipient: settings.emailRecipient,
+    recipientName: settings.emailRecipientName,
+  })
 }

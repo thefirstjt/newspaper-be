@@ -54,5 +54,5 @@ export interface SeenUrlGate {
  */
 export interface XAccountCache {
   lookup(username: string): Promise<string | null>
-  remember(username: string, userId: string): Promise<void>
+  remember(username: string, xUserId: string): Promise<void>
 }
