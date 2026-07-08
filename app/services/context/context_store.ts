@@ -1,5 +1,7 @@
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import app from '@adonisjs/core/services/app'
+import ReaderDocument from '#models/reader_document'
 import {
   READER_DOCUMENTS,
   findDocument,
@@ -7,71 +9,34 @@ import {
 } from '#services/context/document_registry'
 
 /**
- * Manages the reader-context documents on disk. Each document has a committed
- * default template; the first time a document is read its template is copied
- * into the live directory, after which the live copy is the source of truth and
- * can be edited by the reader or rewritten by the model.
- *
- * Both directories are injected so the store can be pointed at temporary
- * locations in tests.
+ * Manages one reader's context documents, stored as rows in the
+ * `reader_documents` table. Every reader has their own copy, seeded from the
+ * committed templates when they sign up; after that the live row is the source
+ * of truth and can be edited by the reader or rewritten by the model. A missing
+ * row is seeded from its template on first read, so the store is safe to use for
+ * a user who has not been through the seeder.
  */
 export class ContextStore {
-  constructor(
-    private liveDir: string,
-    private templateDir: string
-  ) {}
+  constructor(private userId: string) {}
 
-  /**
-   * Returns a document's live content, seeding it from the template the first
-   * time (and writing that seed to the live directory) when no live copy exists.
-   */
+  /** Returns a document's content, seeding it from its template the first time. */
   async read(key: ContextDocumentKey): Promise<string> {
-    const document = findDocument(key)
-    const livePath = join(this.liveDir, document.filename)
-
-    try {
-      return await readFile(livePath, 'utf-8')
-    } catch (error) {
-      if (!isFileNotFound(error)) {
-        throw error
-      }
+    const existing = await ReaderDocument.query()
+      .where('user_id', this.userId)
+      .where('key', key)
+      .first()
+    if (existing) {
+      return existing.content
     }
 
-    const seed = await this.readTemplate(document.filename)
-    await this.writeLive(document.filename, seed)
+    const seed = await this.readTemplate(findDocument(key).filename)
+    await ReaderDocument.create({ userId: this.userId, key, content: seed })
     return seed
   }
 
-  /** Overwrites a document's live content. */
+  /** Overwrites a document's content for this reader. */
   async write(key: ContextDocumentKey, content: string): Promise<void> {
-    const document = findDocument(key)
-    await this.writeLive(document.filename, content)
-  }
-
-  /**
-   * Ensures every registered document has a live copy, seeding any that are
-   * missing from their templates. Safe to run repeatedly.
-   */
-  async seed(): Promise<{ seeded: string[]; existing: string[] }> {
-    const seeded: string[] = []
-    const existing: string[] = []
-
-    for (const document of READER_DOCUMENTS) {
-      const livePath = join(this.liveDir, document.filename)
-      try {
-        await readFile(livePath, 'utf-8')
-        existing.push(document.filename)
-      } catch (error) {
-        if (!isFileNotFound(error)) {
-          throw error
-        }
-        const seed = await this.readTemplate(document.filename)
-        await this.writeLive(document.filename, seed)
-        seeded.push(document.filename)
-      }
-    }
-
-    return { seeded, existing }
+    await ReaderDocument.updateOrCreate({ userId: this.userId, key }, { content })
   }
 
   /**
@@ -103,7 +68,7 @@ export class ContextStore {
   }
 
   private async readTemplate(filename: string): Promise<string> {
-    const templatePath = join(this.templateDir, filename)
+    const templatePath = join(app.makePath('resources/context'), filename)
     try {
       return await readFile(templatePath, 'utf-8')
     } catch (error) {
@@ -112,11 +77,6 @@ export class ContextStore {
       }
       throw error
     }
-  }
-
-  private async writeLive(filename: string, content: string): Promise<void> {
-    await mkdir(this.liveDir, { recursive: true })
-    await writeFile(join(this.liveDir, filename), content, 'utf-8')
   }
 }
 

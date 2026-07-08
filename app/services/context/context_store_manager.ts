@@ -1,19 +1,10 @@
-import app from '@adonisjs/core/services/app'
-import env from '#start/env'
 import { ContextStore } from '#services/context/context_store'
 
-let store: ContextStore | undefined
-
 /**
- * Returns the reader-context store, building it once and reusing it afterwards.
- * The live directory comes from the environment (defaulting to ./context) and
- * the templates ship under resources/context.
+ * Returns a reader-context store scoped to one user. The store is a cheap
+ * wrapper around the `reader_documents` table, so a fresh one is built per user
+ * rather than shared as a singleton.
  */
-export function getContextStore(): ContextStore {
-  if (!store) {
-    const liveDir = app.makePath(env.get('READER_CONTEXT_DIR', 'context'))
-    const templateDir = app.makePath('resources/context')
-    store = new ContextStore(liveDir, templateDir)
-  }
-  return store
+export function contextStoreFor(userId: string): ContextStore {
+  return new ContextStore(userId)
 }
