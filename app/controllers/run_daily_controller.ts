@@ -1,6 +1,8 @@
 import { DateTime } from 'luxon'
+import newspaperConfig from '#config/newspaper'
 import { createEditionBuilder } from '#services/edition/edition_builder'
 import { createPreferenceLearner } from '#services/preferences/preference_learner'
+import { EditionMailer } from '#services/email/edition_mailer'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -15,6 +17,10 @@ export default class RunDailyController {
 
     await createPreferenceLearner().learn()
     const { edition, failures } = await createEditionBuilder(logger).build(date)
+
+    if (newspaperConfig.schedule.emailEnabled) {
+      await new EditionMailer().deliver(edition)
+    }
 
     return serialize({
       date: edition.date,

@@ -43,11 +43,15 @@ export default await Env.create(new URL('../', import.meta.url), {
   // (for example when a frontend consumes the edition instead).
   EMAIL_ENABLED: Env.schema.boolean.optional(),
 
-  // Email delivery (SMTP)
+  // Email delivery (SMTP, via Resend)
+  // The edition is emailed over SMTP through Resend. The password is the Resend
+  // API key; the host, port and username default to Resend's values and rarely
+  // need setting. SMTP_FROM is the sender address and EMAIL_RECIPIENT is where
+  // the daily edition is sent.
+  RESEND_API_KEY: Env.schema.string.optional(),
   SMTP_HOST: Env.schema.string.optional(),
   SMTP_PORT: Env.schema.number.optional(),
   SMTP_USERNAME: Env.schema.string.optional(),
-  SMTP_PASSWORD: Env.schema.string.optional(),
   SMTP_FROM: Env.schema.string.optional(),
   EMAIL_RECIPIENT: Env.schema.string.optional(),
 
