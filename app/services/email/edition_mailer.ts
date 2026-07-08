@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 import { DateTime } from 'luxon'
 import env from '#start/env'
-import { renderEditionEmail } from '#mails/edition_digest'
+import { renderEditionEmail, editionSubject } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
 import type Edition from '#models/edition'
 
@@ -84,7 +84,7 @@ export class EditionMailer {
     await this.sender.send({
       from: `${FROM_NAME} <${this.fromAddress}>`,
       to: this.recipient,
-      subject: 'Fresh off the press — your stories for today',
+      subject: editionSubject(edition.date),
       html: renderEditionEmail(view, this.appUrl, this.recipientName),
     })
 

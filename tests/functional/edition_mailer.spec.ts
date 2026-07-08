@@ -88,7 +88,7 @@ test.group('EditionMailer', (group) => {
     const message = sender.sent[0]
     assert.equal(message.to, 'reader@example.com')
     assert.equal(message.from, 'See Newspaper <newspaper@percussionlabs.ai>')
-    assert.equal(message.subject, 'Fresh off the press — your stories for today')
+    assert.equal(message.subject, 'Fresh off the press — your stories for 21/06/2026')
     assert.include(message.html, 'A surfaced story')
     assert.include(message.html, "Hi Tomiwa, here's your news for today:")
 

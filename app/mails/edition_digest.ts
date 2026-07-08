@@ -45,9 +45,14 @@ export default class EditionDigest extends BaseMail {
   prepare() {
     this.message
       .to(this.recipient)
-      .subject('Fresh off the press — your stories for today')
+      .subject(editionSubject(this.edition.date))
       .html(renderEditionEmail(this.edition, this.appUrl, this.recipientName))
   }
+}
+
+/** The email subject: inviting, with the day in DD/MM/YYYY. */
+export function editionSubject(date: string): string {
+  return `Fresh off the press — your stories for ${formatShortDate(date)}`
 }
 
 /** Builds the email's HTML from the day's edition. */
@@ -167,6 +172,12 @@ function renderEmptyState(): string {
 function formatDate(date: string): string {
   const parsed = DateTime.fromISO(date)
   return parsed.isValid ? parsed.toFormat('cccc, d LLLL yyyy') : date
+}
+
+/** Turns a 'YYYY-MM-DD' date into "DD/MM/YYYY". */
+function formatShortDate(date: string): string {
+  const parsed = DateTime.fromISO(date)
+  return parsed.isValid ? parsed.toFormat('dd/MM/yyyy') : date
 }
 
 /** Escapes text placed into element content. */
