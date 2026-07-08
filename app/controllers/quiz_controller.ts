@@ -10,8 +10,12 @@ import type { HttpContext } from '@adonisjs/core/http'
  */
 export default class QuizController {
   /** Records the reader's answer and returns the correct option and explanation. */
-  async answer({ params, request, serialize, response }: HttpContext) {
-    const question = await QuizQuestion.find(params.id)
+  async answer({ auth, params, request, serialize, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const question = await QuizQuestion.query()
+      .where('user_id', user.id)
+      .where('id', params.id)
+      .first()
     if (!question) {
       return response.notFound({ error: `There is no quiz question with id ${params.id}.` })
     }
@@ -24,7 +28,12 @@ export default class QuizController {
     }
 
     const isCorrect = selectedIndex === question.correctIndex
-    await QuizAttempt.create({ quizQuestionId: question.id, selectedIndex, isCorrect })
+    await QuizAttempt.create({
+      userId: user.id,
+      quizQuestionId: question.id,
+      selectedIndex,
+      isCorrect,
+    })
 
     return serialize({
       isCorrect,
@@ -34,9 +43,13 @@ export default class QuizController {
   }
 
   /** The reader's running quiz score across every answer they have given. */
-  async score({ serialize }: HttpContext) {
-    const [answeredRow] = await QuizAttempt.query().count('* as total')
-    const [correctRow] = await QuizAttempt.query().where('is_correct', true).count('* as total')
+  async score({ auth, serialize }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const [answeredRow] = await QuizAttempt.query().where('user_id', user.id).count('* as total')
+    const [correctRow] = await QuizAttempt.query()
+      .where('user_id', user.id)
+      .where('is_correct', true)
+      .count('* as total')
 
     const answered = Number(answeredRow.$extras.total)
     const correct = Number(correctRow.$extras.total)

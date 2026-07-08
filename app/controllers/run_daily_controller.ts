@@ -1,25 +1,29 @@
 import { DateTime } from 'luxon'
-import newspaperConfig from '#config/newspaper'
+import UserSetting from '#models/user_setting'
 import { createEditionBuilder } from '#services/edition/edition_builder'
 import { createPreferenceLearner } from '#services/preferences/preference_learner'
-import { EditionMailer } from '#services/email/edition_mailer'
+import { editionMailerForSettings } from '#services/email/edition_mailer'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
- * Runs the daily pipeline on demand — the same work the `newspaper:run-daily`
- * command does — so the reader can rebuild today's edition from the API. It runs
- * inline and returns once the edition is ready, which suits a single-user tool
- * where a manual rebuild is an occasional, deliberate act.
+ * Runs the daily pipeline on demand for the authenticated reader — the same work
+ * the `newspaper:run-daily` command does — so they can rebuild today's edition
+ * from the API. It runs inline and returns once the edition is ready.
  */
 export default class RunDailyController {
-  async store({ logger, serialize }: HttpContext) {
+  async store({ auth, logger, serialize }: HttpContext) {
+    const user = auth.getUserOrFail()
     const date = DateTime.now().toISODate()!
 
-    await createPreferenceLearner().learn()
-    const { edition, failures } = await createEditionBuilder(logger).build(date)
+    const learner = await createPreferenceLearner(user)
+    await learner.learn()
 
-    if (newspaperConfig.schedule.emailEnabled) {
-      await new EditionMailer().deliver(edition)
+    const builder = await createEditionBuilder(user, logger)
+    const { edition, failures } = await builder.build(date)
+
+    const settings = await UserSetting.findBy('user_id', user.id)
+    if (settings?.emailEnabled) {
+      await editionMailerForSettings(settings).deliver(edition)
     }
 
     return serialize({

@@ -19,8 +19,10 @@ export default class EditionsController {
     return this.showForDate(ctx.params.date, ctx)
   }
 
-  private async showForDate(date: string, { serialize, response }: HttpContext) {
+  private async showForDate(date: string, { auth, serialize, response }: HttpContext) {
+    const user = auth.getUserOrFail()
     const edition = await Edition.query()
+      .where('user_id', user.id)
       .where('date', date)
       .preload('items', (items) =>
         items.where('state', 'surfaced').preload('rating').orderBy('rank')

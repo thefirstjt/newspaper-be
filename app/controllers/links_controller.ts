@@ -10,7 +10,8 @@ import type { HttpContext } from '@adonisjs/core/http'
  * today, or tomorrow by default.
  */
 export default class LinksController {
-  async store({ request, serialize }: HttpContext) {
+  async store({ auth, request, serialize }: HttpContext) {
+    const user = auth.getUserOrFail()
     const { url, note, targetDate } = await request.validateUsing(submitLinkValidator)
 
     const day =
@@ -19,6 +20,7 @@ export default class LinksController {
         : DateTime.now().plus({ days: 1 }).toISODate()!
 
     const link = await SubmittedLink.create({
+      userId: user.id,
       url,
       note: note ?? null,
       targetDate: day,

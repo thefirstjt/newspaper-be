@@ -13,9 +13,10 @@ import type { HttpContext } from '@adonisjs/core/http'
  * back around in a future edition.
  */
 export default class ItemsController {
-  /** Records a 1–5 rating (with an optional note) for an item. */
-  async rate({ params, request, serialize, response }: HttpContext) {
-    const item = await Item.find(params.id)
+  /** Records a 1–5 rating (with an optional note) for the reader's item. */
+  async rate({ auth, params, request, serialize, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const item = await Item.query().where('user_id', user.id).where('id', params.id).first()
     if (!item) {
       return response.notFound({ error: `There is no item with id ${params.id}.` })
     }
@@ -24,11 +25,11 @@ export default class ItemsController {
 
     await Rating.updateOrCreate(
       { itemId: item.id },
-      { itemId: item.id, stars, note: note ?? null, learnedAt: null }
+      { userId: user.id, itemId: item.id, stars, note: note ?? null, learnedAt: null }
     )
     item.state = 'rated'
     await item.save()
-    await new SeenUrlStore().markSeen([item])
+    await new SeenUrlStore(user.id).markSeen([item])
 
     await item.load('rating')
     return serialize(presentItem(item))
@@ -40,8 +41,9 @@ export default class ItemsController {
    * ready to read. Returns both the discarded item and its replacement (which is
    * null when the reserve pool for that category is empty).
    */
-  async discard({ params, serialize, response }: HttpContext) {
-    const item = await Item.find(params.id)
+  async discard({ auth, params, serialize, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const item = await Item.query().where('user_id', user.id).where('id', params.id).first()
     if (!item) {
       return response.notFound({ error: `There is no item with id ${params.id}.` })
     }
@@ -70,6 +72,7 @@ export default class ItemsController {
    */
   private async promoteNextReserve(discarded: Item): Promise<Item | null> {
     const next = await Item.query()
+      .where('user_id', discarded.userId)
       .where('edition_id', discarded.editionId)
       .where('category_key', discarded.categoryKey)
       .where('state', 'reserve')
@@ -90,7 +93,7 @@ export default class ItemsController {
 
     next.state = 'surfaced'
     await next.save()
-    await new SeenUrlStore().markSeen([next])
+    await new SeenUrlStore(discarded.userId).markSeen([next])
 
     return next
   }
