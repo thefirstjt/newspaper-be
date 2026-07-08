@@ -133,6 +133,8 @@ test.group('EditionMailer', (group) => {
     assert.include(html, 'A surfaced story')
     assert.include(html, 'Visit Newspaper')
     assert.include(html, 'href="https://app.example.com"')
+    assert.include(html, '&copy; 2026, See Newspapers by')
+    assert.include(html, 'Percussion Labs')
     // The quiz and key learning are deliberately left out of the email.
     assert.notInclude(html, 'Today you learned about quorums.')
     assert.notInclude(html, 'What is a quorum?')

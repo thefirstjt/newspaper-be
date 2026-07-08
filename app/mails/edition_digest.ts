@@ -57,6 +57,7 @@ export function renderEditionEmail(
   recipientName: string
 ): string {
   const sections = edition.categories.map((category) => renderCategory(category)).join('')
+  const year = edition.date.slice(0, 4)
 
   return `<!doctype html>
 <html lang="en">
@@ -114,7 +115,7 @@ export function renderEditionEmail(
         <table role="presentation" width="600" class="container" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
           <tr>
             <td class="px" style="padding:20px 40px;text-align:center;font-family:${BODY_FONT};font-size:12px;line-height:1.6;color:${MUTED_TEXT};">
-              Curated for you by See Newspaper · Percussion Labs
+              &copy; ${escapeHtml(year)}, See Newspapers by <span style="color:${NAVY};font-weight:600;">Percussion Labs</span>
             </td>
           </tr>
         </table>
