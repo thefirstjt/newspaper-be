@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import User from '#models/user'
 import { loginValidator } from '#validators/user'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -8,6 +9,8 @@ export default class AccessTokensController {
     const { email, password } = await request.validateUsing(loginValidator)
 
     const user = await User.verifyCredentials(email, password)
+    user.lastLoggedInAt = DateTime.now()
+    await user.save()
     const token = await User.accessTokens.create(user)
 
     return serialize({
