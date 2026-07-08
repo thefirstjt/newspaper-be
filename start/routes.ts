@@ -17,6 +17,8 @@ const QuizController = () => import('#controllers/quiz_controller')
 const LinksController = () => import('#controllers/links_controller')
 const RunDailyController = () => import('#controllers/run_daily_controller')
 const ConfigController = () => import('#controllers/config_controller')
+const CategoriesController = () => import('#controllers/categories_controller')
+const SourcesController = () => import('#controllers/sources_controller')
 const PersonaController = () => import('#controllers/persona_controller')
 
 router.get('/', () => {
@@ -53,10 +55,21 @@ router
         router.get('quiz/score', [QuizController, 'score'])
         router.post('quiz/:id/answer', [QuizController, 'answer'])
         router.post('links', [LinksController, 'store'])
+        router.get('persona', [PersonaController, 'show'])
         router.put('persona', [PersonaController, 'update'])
+        router.post('persona/generate', [PersonaController, 'generate'])
         router.post('run-daily', [RunDailyController, 'store'])
-        router.get('config/sources', [ConfigController, 'sources'])
-        router.get('config/categories', [ConfigController, 'categories'])
+
+        router.get('config/categories', [CategoriesController, 'index'])
+        router.post('config/categories', [CategoriesController, 'store'])
+        router.put('config/categories/:id', [CategoriesController, 'update'])
+        router.delete('config/categories/:id', [CategoriesController, 'destroy'])
+
+        router.get('config/sources', [SourcesController, 'index'])
+        router.post('config/sources', [SourcesController, 'store'])
+        router.put('config/sources/:id', [SourcesController, 'update'])
+        router.delete('config/sources/:id', [SourcesController, 'destroy'])
+
         router.get('config/schedule', [ConfigController, 'showSchedule'])
         router.put('config/schedule', [ConfigController, 'updateSchedule'])
         router.get('config/gap-topics', [ConfigController, 'gapTopics'])

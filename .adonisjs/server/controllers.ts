@@ -5,6 +5,7 @@
 
 export const controllers = {
   AccessTokens: () => import('#controllers/access_tokens_controller'),
+  Categories: () => import('#controllers/categories_controller'),
   Config: () => import('#controllers/config_controller'),
   Editions: () => import('#controllers/editions_controller'),
   Items: () => import('#controllers/items_controller'),
@@ -14,4 +15,5 @@ export const controllers = {
   Profile: () => import('#controllers/profile_controller'),
   Quiz: () => import('#controllers/quiz_controller'),
   RunDaily: () => import('#controllers/run_daily_controller'),
+  Sources: () => import('#controllers/sources_controller'),
 }

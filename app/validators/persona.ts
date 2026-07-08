@@ -16,3 +16,8 @@ export const personaValidator = vine.create({
   avoid: vine.array(vine.string().trim().minLength(1).maxLength(200)).optional(),
   location: vine.string().trim().maxLength(200).nullable().optional(),
 })
+
+/** A directly-edited persona document — the reader's own markdown. */
+export const personaContentValidator = vine.create({
+  content: vine.string().trim().minLength(1).maxLength(10000),
+})
