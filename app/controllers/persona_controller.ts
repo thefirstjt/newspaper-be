@@ -13,14 +13,14 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class PersonaController {
   /** Returns the reader's current persona. */
   async show({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const persona = await contextStoreFor(user.id).read('persona')
     return serialize({ persona })
   }
 
   /** Replaces the reader's persona with the text they provide. */
   async update({ auth, request, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const { content } = await request.validateUsing(personaContentValidator)
     await contextStoreFor(user.id).write('persona', content)
     return serialize({ persona: content })
@@ -33,7 +33,7 @@ export default class PersonaController {
    * learning and quiz). Re-submitting replaces both.
    */
   async generate({ auth, request, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const input = await request.validateUsing(personaValidator)
 
     const persona = await new PersonaBuilder().buildPersona(input)

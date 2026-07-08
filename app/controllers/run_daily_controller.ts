@@ -12,7 +12,7 @@ import type { HttpContext } from '@adonisjs/core/http'
  */
 export default class RunDailyController {
   async store({ auth, logger, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const date = DateTime.now().toISODate()!
 
     const learner = await createPreferenceLearner(user)

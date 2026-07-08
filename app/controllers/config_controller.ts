@@ -12,13 +12,13 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class ConfigController {
   /** When the reader's pipeline runs and how their edition is emailed. */
   async showSchedule({ auth, serialize }: HttpContext) {
-    const settings = await this.settingsFor(auth.getUserOrFail().id)
+    const settings = await this.settingsFor(auth.use('api').getUserOrFail().id)
     return serialize(presentSchedule(settings))
   }
 
   /** Updates the reader's schedule and email settings. */
   async updateSchedule({ auth, request, serialize }: HttpContext) {
-    const settings = await this.settingsFor(auth.getUserOrFail().id)
+    const settings = await this.settingsFor(auth.use('api').getUserOrFail().id)
     const changes = await request.validateUsing(scheduleValidator)
 
     settings.merge({
@@ -33,14 +33,14 @@ export default class ConfigController {
 
   /** The reader's learning-gap topics, in order. */
   async gapTopics({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const topics = await GapTopic.query().where('user_id', user.id).orderBy('position')
     return serialize({ topics: topics.map((topic) => topic.topic) })
   }
 
   /** Replaces the reader's learning-gap topics with the given list. */
   async updateGapTopics({ auth, request, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const { topics } = await request.validateUsing(gapTopicsValidator)
 
     await db.transaction(async (trx) => {

@@ -21,6 +21,17 @@ const authConfig = defineConfig({
     }),
 
     /**
+     * Token-based guard for administrators, backed by the admins table and
+     * their own access-token table.
+     */
+    admin: tokensGuard({
+      provider: tokensUserProvider({
+        tokens: 'accessTokens',
+        model: () => import('#models/admin'),
+      }),
+    }),
+
+    /**
      * Session-based guard for browser authentication.
      */
     web: sessionGuard({

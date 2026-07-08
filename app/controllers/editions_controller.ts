@@ -20,7 +20,7 @@ export default class EditionsController {
   }
 
   private async showForDate(date: string, { auth, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const edition = await Edition.query()
       .where('user_id', user.id)
       .where('date', date)

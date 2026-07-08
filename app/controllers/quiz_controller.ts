@@ -11,7 +11,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class QuizController {
   /** Records the reader's answer and returns the correct option and explanation. */
   async answer({ auth, params, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const question = await QuizQuestion.query()
       .where('user_id', user.id)
       .where('id', params.id)
@@ -44,7 +44,7 @@ export default class QuizController {
 
   /** The reader's running quiz score across every answer they have given. */
   async score({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const [answeredRow] = await QuizAttempt.query().where('user_id', user.id).count('* as total')
     const [correctRow] = await QuizAttempt.query()
       .where('user_id', user.id)

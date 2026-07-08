@@ -11,7 +11,7 @@ import type { HttpContext } from '@adonisjs/core/http'
  */
 export default class LinksController {
   async store({ auth, request, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const { url, note, targetDate } = await request.validateUsing(submitLinkValidator)
 
     const day =

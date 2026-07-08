@@ -15,7 +15,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 export default class ItemsController {
   /** Records a 1–5 rating (with an optional note) for the reader's item. */
   async rate({ auth, params, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const item = await Item.query().where('user_id', user.id).where('id', params.id).first()
     if (!item) {
       return response.notFound({ error: `There is no item with id ${params.id}.` })
@@ -42,7 +42,7 @@ export default class ItemsController {
    * null when the reserve pool for that category is empty).
    */
   async discard({ auth, params, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const item = await Item.query().where('user_id', user.id).where('id', params.id).first()
     if (!item) {
       return response.notFound({ error: `There is no item with id ${params.id}.` })

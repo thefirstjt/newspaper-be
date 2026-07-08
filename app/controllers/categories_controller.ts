@@ -9,7 +9,7 @@ import type { HttpContext } from '@adonisjs/core/http'
  */
 export default class CategoriesController {
   async index({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const categories = await Category.query()
       .where('user_id', user.id)
       .preload('sources')
@@ -18,7 +18,7 @@ export default class CategoriesController {
   }
 
   async store({ auth, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const data = await request.validateUsing(createCategoryValidator)
 
     if (data.max < data.min) {
@@ -37,7 +37,7 @@ export default class CategoriesController {
   }
 
   async update({ auth, params, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const category = await Category.query().where('user_id', user.id).where('id', params.id).first()
     if (!category) {
       return response.notFound({ error: `There is no category with id ${params.id}.` })
@@ -54,7 +54,7 @@ export default class CategoriesController {
   }
 
   async destroy({ auth, params, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const category = await Category.query().where('user_id', user.id).where('id', params.id).first()
     if (!category) {
       return response.notFound({ error: `There is no category with id ${params.id}.` })

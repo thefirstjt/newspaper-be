@@ -10,13 +10,13 @@ import type { HttpContext } from '@adonisjs/core/http'
  */
 export default class SourcesController {
   async index({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const sources = await Source.query().where('user_id', user.id).orderBy('category_id')
     return serialize({ sources: sources.map((source) => presentSource(source)) })
   }
 
   async store({ auth, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const data = await request.validateUsing(createSourceValidator)
 
     if (!(await this.ownsCategory(user.id, data.categoryId))) {
@@ -35,7 +35,7 @@ export default class SourcesController {
   }
 
   async update({ auth, params, request, serialize, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const source = await Source.query().where('user_id', user.id).where('id', params.id).first()
     if (!source) {
       return response.notFound({ error: `There is no source with id ${params.id}.` })
@@ -52,7 +52,7 @@ export default class SourcesController {
   }
 
   async destroy({ auth, params, response }: HttpContext) {
-    const user = auth.getUserOrFail()
+    const user = auth.use('api').getUserOrFail()
     const source = await Source.query().where('user_id', user.id).where('id', params.id).first()
     if (!source) {
       return response.notFound({ error: `There is no source with id ${params.id}.` })

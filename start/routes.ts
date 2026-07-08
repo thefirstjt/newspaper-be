@@ -20,6 +20,7 @@ const ConfigController = () => import('#controllers/config_controller')
 const CategoriesController = () => import('#controllers/categories_controller')
 const SourcesController = () => import('#controllers/sources_controller')
 const PersonaController = () => import('#controllers/persona_controller')
+const AdminSessionsController = () => import('#controllers/admin/sessions_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -43,6 +44,20 @@ router
       .prefix('account')
       .as('profile')
       .use(middleware.auth())
+
+    // The admin area: login is open; everything else needs an admin token.
+    router
+      .group(() => {
+        router.post('login', [AdminSessionsController, 'store'])
+        router
+          .group(() => {
+            router.get('me', [AdminSessionsController, 'me'])
+            router.post('logout', [AdminSessionsController, 'destroy'])
+          })
+          .use(middleware.auth({ guards: ['admin'] }))
+      })
+      .prefix('admin')
+      .as('admin')
 
     // The newspaper itself: reading the daily edition and acting on it. Every
     // route here requires the reader to be authenticated.
