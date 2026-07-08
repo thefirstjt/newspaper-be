@@ -45,7 +45,7 @@ export default class EditionDigest extends BaseMail {
   prepare() {
     this.message
       .to(this.recipient)
-      .subject(`Your news for ${formatDate(this.edition.date)}`)
+      .subject('Fresh off the press — your stories for today')
       .html(renderEditionEmail(this.edition, this.appUrl, this.recipientName))
   }
 }

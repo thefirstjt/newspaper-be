@@ -84,7 +84,7 @@ export class EditionMailer {
     await this.sender.send({
       from: `${FROM_NAME} <${this.fromAddress}>`,
       to: this.recipient,
-      subject: `Your news for ${edition.date}`,
+      subject: 'Fresh off the press — your stories for today',
       html: renderEditionEmail(view, this.appUrl, this.recipientName),
     })
 
