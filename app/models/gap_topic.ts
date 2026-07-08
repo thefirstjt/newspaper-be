@@ -4,10 +4,10 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from '#models/user'
 
 /**
- * A link the reader sent in (via Telegram or the API) to be considered for the
- * newspaper on a given day.
+ * One of a reader's learning-gap topics, which the key learning and quiz draw
+ * from. Ordered by `position` so the list keeps a stable order.
  */
-export default class SubmittedLink extends BaseModel {
+export default class GapTopic extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
@@ -15,22 +15,10 @@ export default class SubmittedLink extends BaseModel {
   declare userId: string
 
   @column()
-  declare url: string
+  declare topic: string
 
   @column()
-  declare note: string | null
-
-  /** The day this link is meant for, as a 'YYYY-MM-DD' string. */
-  @column()
-  declare targetDate: string
-
-  /** Where the link came from: 'telegram' or 'api'. */
-  @column()
-  declare source: string
-
-  /** Whether the link is still waiting to be used: 'pending' or 'consumed'. */
-  @column()
-  declare status: string
+  declare position: number
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

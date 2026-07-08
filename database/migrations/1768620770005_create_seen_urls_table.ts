@@ -6,9 +6,18 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').notNullable()
-      table.string('url_hash').notNullable().unique()
+      table
+        .string('user_id')
+        .notNullable()
+        .references('id')
+        .inTable('users')
+        .onDelete('CASCADE')
+        .index()
+      table.string('url_hash').notNullable()
       table.text('url').notNullable()
       table.timestamp('first_seen_at').notNullable()
+
+      table.unique(['user_id', 'url_hash'])
     })
   }
 

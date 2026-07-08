@@ -4,33 +4,23 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from '#models/user'
 
 /**
- * A link the reader sent in (via Telegram or the API) to be considered for the
- * newspaper on a given day.
+ * One living markdown document about a reader (persona, preferences, or learning
+ * focus). Seeded from a template on signup, then kept up to date by the reader
+ * and the model over time.
  */
-export default class SubmittedLink extends BaseModel {
+export default class ReaderDocument extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
   @column()
   declare userId: string
 
+  /** Which document this is: 'persona', 'preferences' or 'learning-focus'. */
   @column()
-  declare url: string
+  declare key: string
 
   @column()
-  declare note: string | null
-
-  /** The day this link is meant for, as a 'YYYY-MM-DD' string. */
-  @column()
-  declare targetDate: string
-
-  /** Where the link came from: 'telegram' or 'api'. */
-  @column()
-  declare source: string
-
-  /** Whether the link is still waiting to be used: 'pending' or 'consumed'. */
-  @column()
-  declare status: string
+  declare content: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

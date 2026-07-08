@@ -4,10 +4,10 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from '#models/user'
 
 /**
- * A link the reader sent in (via Telegram or the API) to be considered for the
- * newspaper on a given day.
+ * A reader's scalar preferences: the quiz size range, when the daily pipeline
+ * runs, and how their edition is emailed. One row per user.
  */
-export default class SubmittedLink extends BaseModel {
+export default class UserSetting extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
@@ -15,22 +15,23 @@ export default class SubmittedLink extends BaseModel {
   declare userId: string
 
   @column()
-  declare url: string
+  declare quizMin: number
 
   @column()
-  declare note: string | null
+  declare quizMax: number
 
-  /** The day this link is meant for, as a 'YYYY-MM-DD' string. */
+  /** The time of day (24-hour "HH:mm") the reader's pipeline should run. */
   @column()
-  declare targetDate: string
+  declare runTime: string
 
-  /** Where the link came from: 'telegram' or 'api'. */
   @column()
-  declare source: string
+  declare emailEnabled: boolean
 
-  /** Whether the link is still waiting to be used: 'pending' or 'consumed'. */
   @column()
-  declare status: string
+  declare emailRecipient: string | null
+
+  @column()
+  declare emailRecipientName: string | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

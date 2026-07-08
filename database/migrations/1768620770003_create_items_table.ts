@@ -7,6 +7,13 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').notNullable()
       table
+        .string('user_id')
+        .notNullable()
+        .references('id')
+        .inTable('users')
+        .onDelete('CASCADE')
+        .index()
+      table
         .integer('edition_id')
         .notNullable()
         .references('id')
@@ -30,6 +37,8 @@ export default class extends BaseSchema {
       table.integer('rank').nullable()
       table.string('state').notNullable().defaultTo('reserve')
       table.boolean('is_user_submitted').notNullable().defaultTo(false)
+      // Set once a discard has been folded into the reader's preferences.
+      table.timestamp('learned_at').nullable()
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()

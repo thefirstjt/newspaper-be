@@ -1,7 +1,11 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 
+/**
+ * The learning gaps a reader wants the key learning and quiz to focus on, kept
+ * as an ordered list so the model can draw from them each day.
+ */
 export default class extends BaseSchema {
-  protected tableName = 'editions'
+  protected tableName = 'gap_topics'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
@@ -13,15 +17,11 @@ export default class extends BaseSchema {
         .inTable('users')
         .onDelete('CASCADE')
         .index()
-      table.string('date').notNullable()
-      table.string('status').notNullable().defaultTo('building')
-      table.text('key_learning').nullable()
-      table.timestamp('emailed_at').nullable()
+      table.text('topic').notNullable()
+      table.integer('position').notNullable()
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
-
-      table.unique(['user_id', 'date'])
     })
   }
 

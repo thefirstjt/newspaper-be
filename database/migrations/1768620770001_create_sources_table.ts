@@ -6,7 +6,19 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').notNullable()
-      table.string('category_key').notNullable()
+      table
+        .string('user_id')
+        .notNullable()
+        .references('id')
+        .inTable('users')
+        .onDelete('CASCADE')
+        .index()
+      table
+        .integer('category_id')
+        .notNullable()
+        .references('id')
+        .inTable('categories')
+        .onDelete('CASCADE')
       table.string('type').notNullable()
       table.string('name').notNullable()
       table.text('settings').notNullable()
@@ -16,7 +28,7 @@ export default class extends BaseSchema {
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
 
-      table.unique(['category_key', 'name'])
+      table.unique(['category_id', 'name'])
     })
   }
 

@@ -1,15 +1,21 @@
 import { DateTime } from 'luxon'
-import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import type { SourceConfig, SourceType } from '#config/newspaper'
+import User from '#models/user'
+import Category from '#models/category'
 
 export default class Source extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
   @column()
-  declare categoryKey: string
+  declare userId: string
 
-  /** How this source is read: 'rss', 'youtube' or 'websearch'. */
+  @column()
+  declare categoryId: number
+
+  /** How this source is read: 'rss', 'youtube', 'websearch' or 'x'. */
   @column()
   declare type: SourceType
 
@@ -17,8 +23,8 @@ export default class Source extends BaseModel {
   declare name: string
 
   /**
-   * Type-specific details for this source (feed url, channel id or query). It
-   * is stored as JSON text and parsed back into an object when read.
+   * Type-specific details for this source (feed url, channel id, query or
+   * username). Stored as JSON text and parsed back into an object when read.
    */
   @column({
     prepare: (value: SourceConfig['settings']) => JSON.stringify(value),
@@ -37,4 +43,10 @@ export default class Source extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
+
+  @belongsTo(() => Category)
+  declare category: BelongsTo<typeof Category>
 }

@@ -2,29 +2,37 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import User from '#models/user'
-import Item from '#models/item'
-import QuizQuestion from '#models/quiz_question'
+import Source from '#models/source'
 
-export default class Edition extends BaseModel {
+/**
+ * One section of a reader's newspaper. Groups the reader's sources and says how
+ * many items to surface each day and what makes an item relevant.
+ */
+export default class Category extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
   @column()
   declare userId: string
 
-  /** The day this edition is for, as a 'YYYY-MM-DD' string. */
+  /** Stable per-reader identifier, e.g. 'eng-blogs'. */
   @column()
-  declare date: string
-
-  /** Lifecycle of the edition: 'building', 'ready' or 'emailed'. */
-  @column()
-  declare status: string
+  declare key: string
 
   @column()
-  declare keyLearning: string | null
+  declare title: string
 
-  @column.dateTime()
-  declare emailedAt: DateTime | null
+  @column()
+  declare min: number
+
+  @column()
+  declare max: number
+
+  @column()
+  declare poolSize: number
+
+  @column()
+  declare relevanceHint: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -35,9 +43,6 @@ export default class Edition extends BaseModel {
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
 
-  @hasMany(() => Item)
-  declare items: HasMany<typeof Item>
-
-  @hasMany(() => QuizQuestion)
-  declare quizQuestions: HasMany<typeof QuizQuestion>
+  @hasMany(() => Source)
+  declare sources: HasMany<typeof Source>
 }

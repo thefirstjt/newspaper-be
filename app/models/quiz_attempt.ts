@@ -1,11 +1,15 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import User from '#models/user'
 import QuizQuestion from '#models/quiz_question'
 
 export default class QuizAttempt extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
+
+  @column()
+  declare userId: string
 
   @column()
   declare quizQuestionId: number
@@ -22,6 +26,9 @@ export default class QuizAttempt extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
 
   @belongsTo(() => QuizQuestion)
   declare quizQuestion: BelongsTo<typeof QuizQuestion>

@@ -1,7 +1,11 @@
 import { BaseSchema } from '@adonisjs/lucid/schema'
 
+/**
+ * A reader's scalar preferences: how many quiz questions to generate, when the
+ * daily pipeline runs, and how their edition is emailed. One row per user.
+ */
 export default class extends BaseSchema {
-  protected tableName = 'editions'
+  protected tableName = 'user_settings'
 
   async up() {
     this.schema.createTable(this.tableName, (table) => {
@@ -9,19 +13,19 @@ export default class extends BaseSchema {
       table
         .string('user_id')
         .notNullable()
+        .unique()
         .references('id')
         .inTable('users')
         .onDelete('CASCADE')
-        .index()
-      table.string('date').notNullable()
-      table.string('status').notNullable().defaultTo('building')
-      table.text('key_learning').nullable()
-      table.timestamp('emailed_at').nullable()
+      table.integer('quiz_min').notNullable()
+      table.integer('quiz_max').notNullable()
+      table.string('run_time').notNullable()
+      table.boolean('email_enabled').notNullable().defaultTo(true)
+      table.string('email_recipient').nullable()
+      table.string('email_recipient_name').nullable()
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
-
-      table.unique(['user_id', 'date'])
     })
   }
 

@@ -7,6 +7,13 @@ export default class extends BaseSchema {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').notNullable()
       table
+        .string('user_id')
+        .notNullable()
+        .references('id')
+        .inTable('users')
+        .onDelete('CASCADE')
+        .index()
+      table
         .integer('item_id')
         .notNullable()
         .unique()
@@ -15,6 +22,8 @@ export default class extends BaseSchema {
         .onDelete('CASCADE')
       table.integer('stars').notNullable()
       table.text('note').nullable()
+      // Set once this rating has been folded into the reader's preferences.
+      table.timestamp('learned_at').nullable()
 
       table.timestamp('created_at').notNullable()
       table.timestamp('updated_at').nullable()
