@@ -3,6 +3,8 @@ import type Edition from '#models/edition'
 import type Item from '#models/item'
 import type QuizQuestion from '#models/quiz_question'
 import type SubmittedLink from '#models/submitted_link'
+import type Category from '#models/category'
+import type Source from '#models/source'
 
 /**
  * Turns the newspaper's models into the plain shapes the API returns. These are
@@ -69,6 +71,33 @@ export function presentEdition(
     keyLearning: edition.keyLearning,
     categories,
     quiz: quizQuestions.map((question) => presentQuizQuestion(question)),
+  }
+}
+
+/** One of the reader's sources. */
+export function presentSource(source: Source) {
+  return {
+    id: source.id,
+    categoryId: source.categoryId,
+    type: source.type,
+    name: source.name,
+    settings: source.settings,
+    enabled: source.enabled,
+    lastFetchedAt: source.lastFetchedAt?.toISO() ?? null,
+  }
+}
+
+/** One of the reader's categories, with its sources (which must be preloaded). */
+export function presentCategory(category: Category) {
+  return {
+    id: category.id,
+    key: category.key,
+    title: category.title,
+    min: category.min,
+    max: category.max,
+    poolSize: category.poolSize,
+    relevanceHint: category.relevanceHint,
+    sources: category.sources.map((source) => presentSource(source)),
   }
 }
 

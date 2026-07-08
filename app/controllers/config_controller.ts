@@ -1,61 +1,15 @@
 import db from '@adonisjs/lucid/services/db'
-import Source from '#models/source'
-import Category from '#models/category'
 import GapTopic from '#models/gap_topic'
 import UserSetting from '#models/user_setting'
 import { scheduleValidator, gapTopicsValidator } from '#validators/config'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
- * Per-user views and edits of how a reader's newspaper is set up. Categories,
- * sources, the schedule and the learning-gap topics all live in the database now
- * and are scoped to the authenticated reader.
+ * Per-user schedule and learning-gap settings. Categories and sources have their
+ * own controllers; this one handles the reader's schedule (run time, email
+ * toggle and frequency) and their learning-gap topics.
  */
 export default class ConfigController {
-  /** The reader's sources. */
-  async sources({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
-    const sources = await Source.query().where('user_id', user.id).orderBy('category_id')
-    return serialize({
-      sources: sources.map((source) => ({
-        id: source.id,
-        categoryId: source.categoryId,
-        type: source.type,
-        name: source.name,
-        settings: source.settings,
-        enabled: source.enabled,
-        lastFetchedAt: source.lastFetchedAt?.toISO() ?? null,
-      })),
-    })
-  }
-
-  /** The reader's categories, each with its sources. */
-  async categories({ auth, serialize }: HttpContext) {
-    const user = auth.getUserOrFail()
-    const categories = await Category.query()
-      .where('user_id', user.id)
-      .preload('sources')
-      .orderBy('key')
-    return serialize({
-      categories: categories.map((category) => ({
-        id: category.id,
-        key: category.key,
-        title: category.title,
-        min: category.min,
-        max: category.max,
-        poolSize: category.poolSize,
-        relevanceHint: category.relevanceHint,
-        sources: category.sources.map((source) => ({
-          id: source.id,
-          type: source.type,
-          name: source.name,
-          settings: source.settings,
-          enabled: source.enabled,
-        })),
-      })),
-    })
-  }
-
   /** When the reader's pipeline runs and how their edition is emailed. */
   async showSchedule({ auth, serialize }: HttpContext) {
     const settings = await this.settingsFor(auth.getUserOrFail().id)
