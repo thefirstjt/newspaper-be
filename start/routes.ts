@@ -22,6 +22,7 @@ const SourcesController = () => import('#controllers/sources_controller')
 const PersonaController = () => import('#controllers/persona_controller')
 const AdminSessionsController = () => import('#controllers/admin/sessions_controller')
 const AdminInvitationsController = () => import('#controllers/admin/invitations_controller')
+const OnboardingController = () => import('#controllers/onboarding_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -31,11 +32,20 @@ router
   .group(() => {
     router
       .group(() => {
-        router.post('signup', [controllers.NewAccount, 'store'])
         router.post('login', [controllers.AccessTokens, 'store'])
       })
       .prefix('auth')
       .as('auth')
+
+    // Reader onboarding via an invitation's magic link (stage 1). Both routes
+    // are open — the invitation token is the credential.
+    router
+      .group(() => {
+        router.get('invitation', [OnboardingController, 'invitation'])
+        router.post('accept', [OnboardingController, 'accept'])
+      })
+      .prefix('onboarding')
+      .as('onboarding')
 
     router
       .group(() => {

@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
+import Invitation from '#models/invitation'
 
 /** Matches a UUID v7 (the version nibble is 7). */
 const UUID_V7 = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -19,20 +21,26 @@ test.group('UUID user ids and auth', (group) => {
     assert.match(user.id, UUID_V7)
   })
 
-  test('the token returned at signup authenticates and is tied to the UUID id', async ({
+  test('the token returned when accepting an invite authenticates and is tied to the UUID id', async ({
     client,
     assert,
   }) => {
-    const signup = await client.post('/api/v1/auth/signup').json({
-      name: 'Reader',
+    await Invitation.create({
       email: 'b@example.com',
-      password: 'secret123',
-      passwordConfirmation: 'secret123',
+      token: 'invite-token',
+      status: 'pending',
+      expiresAt: DateTime.now().plus({ days: 3 }),
     })
-    signup.assertStatus(200)
 
-    const userId = signup.body().data.user.id
-    const token = signup.body().data.token
+    const accept = await client.post('/api/v1/onboarding/accept').json({
+      token: 'invite-token',
+      name: 'Reader',
+      password: 'secret123',
+    })
+    accept.assertStatus(200)
+
+    const userId = accept.body().data.user.id
+    const token = accept.body().data.token
     assert.match(userId, UUID_V7)
 
     // The token authenticates a protected route.

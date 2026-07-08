@@ -1,9 +1,8 @@
 import { test } from '@japa/runner'
-import type { ApiClient } from '@japa/api-client'
 import testUtils from '@adonisjs/core/services/test_utils'
 import db from '@adonisjs/lucid/services/db'
 import newspaperConfig from '#config/newspaper'
-import { seedDefaultCategories } from '#services/onboarding/user_seeder'
+import { seedAccountBasics, seedDefaultCategories } from '#services/onboarding/user_seeder'
 import User from '#models/user'
 import Category from '#models/category'
 import Source from '#models/source'
@@ -16,32 +15,25 @@ const expectedSourceCount = newspaperConfig.categories.reduce(
   0
 )
 
-async function signUp(client: ApiClient, email: string) {
-  const response = await client
-    .post('/api/v1/auth/signup')
-    .json({ name: 'Reader', email, password: 'secret123', passwordConfirmation: 'secret123' })
-  response.assertStatus(200)
-  return User.findByOrFail('email', email)
+let counter = 0
+async function makeUser() {
+  counter += 1
+  return User.create({
+    name: 'Reader',
+    email: `reader-${counter}@example.com`,
+    password: 'secret123',
+  })
 }
 
-test.group('signup seeding', (group) => {
+test.group('seedAccountBasics', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  test('a new user gets the default categories, sources, gap topics, settings, and docs', async ({
-    client,
+  test('seeds settings and reader documents, but not categories or gap topics', async ({
     assert,
   }) => {
-    const user = await signUp(client, 'new@example.com')
-
-    const categories = await Category.query().where('user_id', user.id)
-    assert.lengthOf(categories, newspaperConfig.categories.length)
-
-    const sources = await Source.query().where('user_id', user.id)
-    assert.lengthOf(sources, expectedSourceCount)
-
-    const gapTopics = await GapTopic.query().where('user_id', user.id)
-    assert.lengthOf(gapTopics, newspaperConfig.gapTopics.length)
+    const user = await makeUser()
+    await db.transaction((trx) => seedAccountBasics(user, trx))
 
     const settings = await UserSetting.findBy('user_id', user.id)
     assert.isNotNull(settings)
@@ -50,32 +42,44 @@ test.group('signup seeding', (group) => {
     const documents = await ReaderDocument.query().where('user_id', user.id)
     assert.lengthOf(documents, 3)
     assert.isAbove(documents[0].content.trim().length, 0)
+
+    // The reader defines these during onboarding, so they are not seeded here.
+    assert.lengthOf(await Category.query().where('user_id', user.id), 0)
+    assert.lengthOf(await GapTopic.query().where('user_id', user.id), 0)
   })
+})
 
-  test('two users are seeded independently', async ({ client, assert }) => {
-    const alice = await signUp(client, 'alice@example.com')
-    const bob = await signUp(client, 'bob@example.com')
+test.group('seedDefaultCategories', (group) => {
+  group.setup(() => testUtils.db().migrate())
+  group.each.setup(() => testUtils.db().truncate())
 
-    const aliceCategories = await Category.query().where('user_id', alice.id)
-    const bobCategories = await Category.query().where('user_id', bob.id)
+  test('seeds the config default categories and sources', async ({ assert }) => {
+    const user = await makeUser()
+    await db.transaction((trx) => seedDefaultCategories(user, trx))
 
-    assert.lengthOf(aliceCategories, newspaperConfig.categories.length)
-    assert.lengthOf(bobCategories, newspaperConfig.categories.length)
-    // No overlap: every category row belongs to exactly one of them.
-    const allCategories = await Category.all()
-    assert.lengthOf(allCategories, aliceCategories.length + bobCategories.length)
-  })
-
-  test('re-seeding an already-seeded user adds nothing', async ({ client, assert }) => {
-    const user = await signUp(client, 'again@example.com')
-
-    const result = await db.transaction((trx) => seedDefaultCategories(user, trx))
-
-    assert.equal(result.categoriesAdded, 0)
-    assert.equal(result.sourcesAdded, 0)
     assert.lengthOf(
       await Category.query().where('user_id', user.id),
       newspaperConfig.categories.length
     )
+    assert.lengthOf(await Source.query().where('user_id', user.id), expectedSourceCount)
+  })
+
+  test('is idempotent — re-seeding adds nothing', async ({ assert }) => {
+    const user = await makeUser()
+    await db.transaction((trx) => seedDefaultCategories(user, trx))
+
+    const result = await db.transaction((trx) => seedDefaultCategories(user, trx))
+    assert.equal(result.categoriesAdded, 0)
+    assert.equal(result.sourcesAdded, 0)
+  })
+
+  test('seeds two readers independently', async ({ assert }) => {
+    const alice = await makeUser()
+    const bob = await makeUser()
+    await db.transaction((trx) => seedDefaultCategories(alice, trx))
+    await db.transaction((trx) => seedDefaultCategories(bob, trx))
+
+    const all = await Category.all()
+    assert.lengthOf(all, newspaperConfig.categories.length * 2)
   })
 })

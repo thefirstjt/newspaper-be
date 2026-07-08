@@ -5,21 +5,20 @@ import newspaperConfig from '#config/newspaper'
 import { READER_DOCUMENTS } from '#services/context/document_registry'
 import Category from '#models/category'
 import Source from '#models/source'
-import GapTopic from '#models/gap_topic'
 import UserSetting from '#models/user_setting'
 import ReaderDocument from '#models/reader_document'
 import type User from '#models/user'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 
 /**
- * Gives a brand-new user the default newspaper: the starter categories and
- * their sources, the default learning-gap topics, sensible settings, and a copy
- * of each reader-context document seeded from the shipped templates. Everything
- * runs inside the caller's transaction so a half-seeded account can never exist.
- * The values come from config/newspaper.ts, which now serves as the defaults for
- * every new reader.
+ * Sets up a new account with just its basics: sensible default settings and a
+ * copy of each reader-context document seeded from the shipped templates. It
+ * does NOT create categories, sources or gap topics — the reader defines those
+ * during onboarding (their categories in stage 3, their gap topics from the
+ * persona in stage 2). Runs inside the caller's transaction so a half-seeded
+ * account can never exist.
  */
-export async function seedNewUser(user: User, trx: TransactionClientContract): Promise<void> {
+export async function seedAccountBasics(user: User, trx: TransactionClientContract): Promise<void> {
   await UserSetting.create(
     {
       userId: user.id,
@@ -31,12 +30,6 @@ export async function seedNewUser(user: User, trx: TransactionClientContract): P
     },
     { client: trx }
   )
-
-  for (const [position, topic] of newspaperConfig.gapTopics.entries()) {
-    await GapTopic.create({ userId: user.id, topic, position }, { client: trx })
-  }
-
-  await seedDefaultCategories(user, trx)
 
   for (const document of READER_DOCUMENTS) {
     const content = await readTemplate(document.filename)
