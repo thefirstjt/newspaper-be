@@ -21,6 +21,7 @@ const CategoriesController = () => import('#controllers/categories_controller')
 const SourcesController = () => import('#controllers/sources_controller')
 const PersonaController = () => import('#controllers/persona_controller')
 const AdminSessionsController = () => import('#controllers/admin/sessions_controller')
+const AdminInvitationsController = () => import('#controllers/admin/invitations_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
@@ -53,6 +54,8 @@ router
           .group(() => {
             router.get('me', [AdminSessionsController, 'me'])
             router.post('logout', [AdminSessionsController, 'destroy'])
+            router.post('invitations', [AdminInvitationsController, 'store'])
+            router.get('invitations', [AdminInvitationsController, 'index'])
           })
           .use(middleware.auth({ guards: ['admin'] }))
       })

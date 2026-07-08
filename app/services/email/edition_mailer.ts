@@ -1,56 +1,16 @@
-import { Resend } from 'resend'
 import { DateTime } from 'luxon'
 import env from '#start/env'
 import { renderEditionEmail, editionSubject } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
+import { ResendEmailSender, FROM_NAME } from '#services/email/email_sender'
+import type { EmailSender } from '#services/email/email_sender'
 import type Edition from '#models/edition'
 import type User from '#models/user'
 
-/*
- * SMTP is kept as a second option, commented out for now. The `@adonisjs/mail`
- * package, `config/mail.ts` and the `EditionDigest` mail class are all still in
- * place, so switching back is a matter of sending through them instead of the
- * Resend client below:
- *
- *   import mail from '@adonisjs/mail/services/main'
- *   import EditionDigest from '#mails/edition_digest'
- *   await mail.send(new EditionDigest(view, this.recipient, this.appUrl))
- *
- * We use the Resend HTTP API here because this network blocks outbound SMTP.
- */
-
-/** A ready-to-send email, kept transport-agnostic so the sender can be swapped. */
-export interface EmailMessage {
-  from: string
-  to: string
-  subject: string
-  html: string
-}
-
-/** Sends an already-rendered email. Backed by Resend in production, faked in tests. */
-export interface EmailSender {
-  send(message: EmailMessage): Promise<void>
-}
-
-/** Sends email through the Resend HTTP API using the RESEND_API_KEY. */
-export class ResendEmailSender implements EmailSender {
-  constructor(private client = new Resend(env.get('RESEND_API_KEY', ''))) {}
-
-  async send(message: EmailMessage): Promise<void> {
-    const { error } = await this.client.emails.send({
-      from: message.from,
-      to: message.to,
-      subject: message.subject,
-      html: message.html,
-    })
-    if (error) {
-      throw new Error(`Resend could not send the email: ${error.message}`)
-    }
-  }
-}
-
-/** The sender's display name, shown in the reader's inbox before the address. */
-const FROM_NAME = 'See Newspaper'
+// The transport-agnostic sender lives in #services/email/email_sender; re-export
+// the parts the existing edition-mailer tests import from here.
+export type { EmailMessage, EmailSender } from '#services/email/email_sender'
+export { ResendEmailSender } from '#services/email/email_sender'
 
 /**
  * Who an edition is sent to and how it is rendered. The recipient and their name

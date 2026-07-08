@@ -6,6 +6,7 @@
 export const controllers = {
   AccessTokens: () => import('#controllers/access_tokens_controller'),
   admin: {
+    Invitations: () => import('#controllers/admin/invitations_controller'),
     Sessions: () => import('#controllers/admin/sessions_controller'),
   },
   Categories: () => import('#controllers/categories_controller'),
