@@ -3,6 +3,10 @@ import { defineConfig, transports } from '@adonisjs/mail'
 import type { InferMailers } from '@adonisjs/mail/types'
 
 /**
+ * SMTP configuration, kept as a second option. Email is currently sent through
+ * the Resend HTTP API (see EditionMailer), because this network blocks outbound
+ * SMTP; this config stays here so switching back to SMTP is a small change.
+ *
  * Mail is sent over SMTP through Resend. Only the API key is required — the
  * host, port and username default to Resend's own values, and the password is
  * the Resend API key. The default sender is the newspaper's own address.

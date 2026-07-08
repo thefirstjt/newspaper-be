@@ -1,11 +1,23 @@
 import { test } from '@japa/runner'
-import mail from '@adonisjs/mail/services/main'
 import testUtils from '@adonisjs/core/services/test_utils'
 import Edition from '#models/edition'
 import Item from '#models/item'
 import QuizQuestion from '#models/quiz_question'
-import EditionDigest, { renderEditionEmail } from '#mails/edition_digest'
+import { renderEditionEmail } from '#mails/edition_digest'
+import { presentEdition } from '#transformers/newspaper_presenter'
 import { EditionMailer } from '#services/email/edition_mailer'
+import type { EmailMessage, EmailSender } from '#services/email/edition_mailer'
+
+/** An email sender that records what it was asked to send instead of sending it. */
+function recordingSender(): EmailSender & { sent: EmailMessage[] } {
+  const sent: EmailMessage[] = []
+  return {
+    sent,
+    async send(message) {
+      sent.push(message)
+    },
+  }
+}
 
 async function editionWithContent(date: string) {
   const edition = await Edition.create({
@@ -62,20 +74,21 @@ test.group('EditionMailer', (group) => {
 
   test('sends the edition to the reader and marks it emailed', async ({ assert }) => {
     const edition = await editionWithContent('2026-06-21')
-    const fakeMailer = mail.fake()
+    const sender = recordingSender()
 
-    try {
-      await new EditionMailer('reader@example.com', 'https://app.example.com').deliver(edition)
+    await new EditionMailer(
+      'reader@example.com',
+      'https://app.example.com',
+      'newspaper@percussionlabs.ai',
+      sender
+    ).deliver(edition)
 
-      fakeMailer.mails.assertSent(EditionDigest, (sent) => {
-        return (
-          sent.message.hasTo('reader@example.com') &&
-          sent.message.toObject().message.subject === 'Your newspaper for 2026-06-21'
-        )
-      })
-    } finally {
-      mail.restore()
-    }
+    assert.lengthOf(sender.sent, 1)
+    const message = sender.sent[0]
+    assert.equal(message.to, 'reader@example.com')
+    assert.equal(message.from, 'newspaper@percussionlabs.ai')
+    assert.equal(message.subject, 'Your newspaper for 2026-06-21')
+    assert.include(message.html, 'A surfaced story')
 
     await edition.refresh()
     assert.equal(edition.status, 'emailed')
@@ -84,17 +97,19 @@ test.group('EditionMailer', (group) => {
 
   test('fails clearly when no recipient is configured', async ({ assert }) => {
     const edition = await editionWithContent('2026-06-21')
-    const fakeMailer = mail.fake()
+    const sender = recordingSender()
 
-    try {
-      await assert.rejects(
-        () => new EditionMailer(undefined, 'https://app.example.com').deliver(edition),
-        /EMAIL_RECIPIENT/
-      )
-      fakeMailer.mails.assertNoneSent()
-    } finally {
-      mail.restore()
-    }
+    await assert.rejects(
+      () =>
+        new EditionMailer(
+          '',
+          'https://app.example.com',
+          'newspaper@percussionlabs.ai',
+          sender
+        ).deliver(edition),
+      /EMAIL_RECIPIENT/
+    )
+    assert.lengthOf(sender.sent, 0)
   })
 
   test('the email shows surfaced items, key learning, quiz, and the app button', async ({
@@ -106,7 +121,6 @@ test.group('EditionMailer', (group) => {
     )
     await edition.load('quizQuestions')
 
-    const { presentEdition } = await import('#transformers/newspaper_presenter')
     const html = renderEditionEmail(
       presentEdition(edition, edition.items, edition.quizQuestions),
       'https://app.example.com'
