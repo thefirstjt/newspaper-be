@@ -32,7 +32,10 @@ export const sourceDiscoverySchema = z.object({
   sources: z.array(
     z.object({
       name: z.string(),
-      feedUrl: z.string().url(),
+      // A plain string rather than a url()-validated field: the strict
+      // structured-output mode rejects the "uri" format that url() emits, and
+      // every feed is verified afterwards anyway, so bad urls are dropped then.
+      feedUrl: z.string().describe('The full URL of the RSS or Atom feed.'),
     })
   ),
 })
