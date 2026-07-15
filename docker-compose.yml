@@ -86,24 +86,14 @@ services:
       retries: 3
       start_period: 20s
 
-  # Consumes the Redis-backed queue: edition builds and category generation are
-  # dispatched as jobs, so without this worker those features never run.
+  # Drains the Redis-backed queues. It listens on both 'default' (the heavy
+  # edition builds and category generation) and 'scheduler' (the once-a-minute
+  # tick that fires each reader's daily build at their configured time), so no
+  # separate scheduler process is needed. Without this worker those features
+  # never run.
   worker:
     <<: *app
     command: ['node', 'ace', 'queue:listen']
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
-
-  # Fires each reader's daily edition build at the time they configured. Keep a
-  # single instance — it dispatches onto the same queue the worker drains.
-  scheduler:
-    <<: *app
-    command: ['node', 'ace', 'newspaper:scheduler']
     depends_on:
       mysql:
         condition: service_healthy

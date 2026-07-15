@@ -82,26 +82,27 @@ restarts.
 
 ### Services
 
-| Service     | Command                          | Purpose                                                        |
-| ----------- | -------------------------------- | -------------------------------------------------------------- |
-| `app`       | `node bin/server.js`             | The HTTP API.                                                  |
-| `worker`    | `node ace queue:listen`          | Consumes queued jobs — edition builds and category generation. |
-| `scheduler` | `node ace newspaper:scheduler`   | Fires each reader's daily build at their configured run time.  |
-| `migrate`   | `node ace migration:run --force` | One-shot; runs on startup before the app services.             |
-| `mysql`     | —                                | Database.                                                      |
-| `redis`     | —                                | Job queue backend.                                             |
+| Service   | Command                          | Purpose                                                        |
+| --------- | -------------------------------- | -------------------------------------------------------------- |
+| `app`     | `node bin/server.js`             | The HTTP API.                                                  |
+| `worker`  | `node ace queue:listen`          | Drains the queues — edition builds, category generation, and the scheduler tick. |
+| `migrate` | `node ace migration:run --force` | One-shot; runs on startup before the app services.             |
+| `mysql`   | —                                | Database.                                                      |
+| `redis`   | —                                | Job queue backend.                                             |
 
-> The **worker is not optional**: edition builds and onboarding category
-> generation are dispatched as Redis jobs, so without it those features never
-> run.
+> The **worker is not optional**: edition builds, onboarding category generation
+> and the daily scheduler are all driven by Redis jobs, so without it those
+> features never run.
 
 ### Daily scheduling
 
-The `scheduler` service runs continuously and, every minute, queues a build for
-each active reader whose configured run time (`runTime` in their settings, and
-whose email frequency lands on the day) has arrived — the worker then builds and
-emails the edition. Run **one** scheduler instance so builds aren't dispatched
-twice.
+Scheduling is a BullMQ repeatable job, not a separate process. When the worker
+starts it registers a tick that fires every minute on a dedicated `scheduler`
+queue; each tick queues a build for every active reader whose configured run
+time (`runTime` in their settings) has arrived and whose email frequency lands
+on the day. The build then runs on the `default` queue, so a slow build never
+delays the tick. The schedule is keyed in Redis, so restarting or running a
+second worker never double-registers it.
 
 Run times are interpreted in the container's timezone, set by `TZ` (defaults to
 `UTC` in the image). To (re)build editions by hand instead — for a backfill or a
