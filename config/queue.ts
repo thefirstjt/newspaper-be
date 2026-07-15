@@ -8,6 +8,13 @@ export default defineConfig({
     password: env.get('QUEUE_REDIS_PASSWORD'),
   },
 
+  /**
+   * The queues a `queue:listen` worker processes. 'default' carries the heavy
+   * edition builds; 'scheduler' carries only the once-a-minute tick, kept on its
+   * own queue (and therefore its own worker) so a slow build never delays it.
+   */
+  queueNames: ['default', 'scheduler'],
+
   queue: {},
 
   worker: {},

@@ -1,0 +1,36 @@
+import type { ApplicationService } from '@adonisjs/core/types'
+
+/**
+ * Installs the newspaper's scheduler tick as a BullMQ repeatable job, so the
+ * queue itself fires it every minute — no bespoke always-on loop needed.
+ *
+ * Registration runs only in the queue worker (`node ace queue:listen`): that is
+ * the process that has Redis and actually drains the schedule, so installing it
+ * anywhere else (the web server, one-off ace commands, tests) would just add a
+ * needless Redis connection. BullMQ keys the schedule by its repeat pattern, so
+ * a restart — or a second worker — re-registers the same one rather than piling
+ * up duplicates.
+ */
+export default class SchedulerProvider {
+  constructor(protected app: ApplicationService) {}
+
+  async ready() {
+    const isQueueWorker =
+      this.app.getEnvironment() === 'console' && process.argv.includes('queue:listen')
+    if (!isQueueWorker) return
+
+    const { default: queue } = await import('@rlanz/bull-queue/services/main')
+    const { default: DispatchDueBuildsJob } = await import('#jobs/dispatch_due_builds_job')
+
+    await queue.dispatch(
+      DispatchDueBuildsJob,
+      {},
+      {
+        queueName: 'scheduler',
+        repeat: { pattern: '* * * * *' },
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    )
+  }
+}

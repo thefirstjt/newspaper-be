@@ -28,7 +28,7 @@ export default defineConfig({
     () => import('@adonisjs/core/commands'),
     () => import('@adonisjs/lucid/commands'),
     () => import('@adonisjs/session/commands'),
-    () => import('@rlanz/bull-queue/commands')
+    () => import('@rlanz/bull-queue/commands'),
   ],
 
   /*
@@ -56,7 +56,8 @@ export default defineConfig({
     () => import('@adonisjs/mail/mail_provider'),
     () => import('#providers/api_provider'),
     () => import('@adonisjs/transmit/transmit_provider'),
-    () => import('@rlanz/bull-queue/queue_provider')
+    () => import('@rlanz/bull-queue/queue_provider'),
+    () => import('#providers/scheduler_provider'),
   ],
 
   /*
