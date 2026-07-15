@@ -22,6 +22,7 @@ const SourcesController = () => import('#controllers/sources_controller')
 const PersonaController = () => import('#controllers/persona_controller')
 const AdminSessionsController = () => import('#controllers/admin/sessions_controller')
 const AdminInvitationsController = () => import('#controllers/admin/invitations_controller')
+const AdminUsersController = () => import('#controllers/admin/users_controller')
 const OnboardingController = () => import('#controllers/onboarding_controller')
 
 router.get('/', () => {
@@ -72,6 +73,8 @@ router
             router.post('logout', [AdminSessionsController, 'destroy'])
             router.post('invitations', [AdminInvitationsController, 'store'])
             router.get('invitations', [AdminInvitationsController, 'index'])
+            router.get('users', [AdminUsersController, 'index'])
+            router.post('users/:id/toggle-status', [AdminUsersController, 'toggleStatus'])
           })
           .use(middleware.auth({ guards: ['admin'] }))
       })

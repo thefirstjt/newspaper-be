@@ -8,6 +8,7 @@ export const controllers = {
   admin: {
     Invitations: () => import('#controllers/admin/invitations_controller'),
     Sessions: () => import('#controllers/admin/sessions_controller'),
+    Users: () => import('#controllers/admin/users_controller'),
   },
   Categories: () => import('#controllers/categories_controller'),
   Config: () => import('#controllers/config_controller'),

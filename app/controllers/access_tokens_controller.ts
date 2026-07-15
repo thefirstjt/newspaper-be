@@ -5,10 +5,14 @@ import type { HttpContext } from '@adonisjs/core/http'
 import UserTransformer from '#transformers/user_transformer'
 
 export default class AccessTokensController {
-  async store({ request, serialize }: HttpContext) {
+  async store({ request, serialize, response }: HttpContext) {
     const { email, password } = await request.validateUsing(loginValidator)
 
     const user = await User.verifyCredentials(email, password)
+    if (!user.isActive) {
+      return response.forbidden({ error: 'This account has been deactivated.' })
+    }
+
     user.lastLoggedInAt = DateTime.now()
     await user.save()
     const token = await User.accessTokens.create(user)
