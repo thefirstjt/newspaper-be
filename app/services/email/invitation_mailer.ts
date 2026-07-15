@@ -39,7 +39,7 @@ function renderInvitationEmail(link: string): string {
     <tr>
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;">
-          <tr><td style="height:6px;line-height:6px;font-size:6px;background:#A676FC;">&nbsp;</td></tr>
+          <tr><td style="height:6px;line-height:6px;font-size:6px;background:#4C398F;">&nbsp;</td></tr>
           <tr>
             <td style="padding:36px 40px;">
               <p style="margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#A676FC;">See Newspaper</p>
@@ -49,11 +49,15 @@ function renderInvitationEmail(link: string): string {
               </p>
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="border-radius:10px;background:#A676FC;">
+                  <td style="border-radius:10px;background:#4C398F;">
                     <a href="${escapeAttribute(link)}" style="display:inline-block;padding:14px 30px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;border-radius:10px;text-decoration:none;">Set up my newspaper</a>
                   </td>
                 </tr>
               </table>
+              <p style="margin:16px 0 0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#9B93B5;">
+                Button not working? Copy and paste this link into your browser:<br>
+                <a href="${escapeAttribute(link)}" style="color:#4C398F;word-break:break-all;">${escapeAttribute(link)}</a>
+              </p>
             </td>
           </tr>
         </table>

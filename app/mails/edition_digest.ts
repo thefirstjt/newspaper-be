@@ -87,7 +87,7 @@ export function renderEditionEmail(
       <td align="center" style="padding:32px 16px;">
         <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;">
           <tr>
-            <td style="height:6px;line-height:6px;font-size:6px;background:${PURPLE};">&nbsp;</td>
+            <td style="height:6px;line-height:6px;font-size:6px;background:${DEEP_PURPLE};">&nbsp;</td>
           </tr>
           <tr>
             <td class="px" style="padding:36px 40px 0;">
@@ -109,11 +109,15 @@ export function renderEditionEmail(
             <td class="px" style="padding:28px 40px 40px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="border-radius:10px;background:${PURPLE};">
+                  <td style="border-radius:10px;background:${DEEP_PURPLE};">
                     <a href="${escapeAttribute(appUrl)}" style="display:inline-block;padding:14px 30px;font-family:${BODY_FONT};font-size:15px;font-weight:600;color:#ffffff;border-radius:10px;">Visit Newspaper</a>
                   </td>
                 </tr>
               </table>
+              <p style="margin:16px 0 0;font-family:${BODY_FONT};font-size:12px;line-height:1.6;color:${MUTED_TEXT};">
+                Button not working? Copy and paste this link into your browser:<br>
+                <a href="${escapeAttribute(appUrl)}" style="color:${DEEP_PURPLE};word-break:break-all;">${escapeHtml(appUrl)}</a>
+              </p>
             </td>
           </tr>
         </table>
