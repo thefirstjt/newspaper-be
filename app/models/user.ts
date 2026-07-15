@@ -46,6 +46,10 @@ export default class User extends compose(BaseModel, withAuthFinder(hash)) {
   @column.dateTime()
   declare lastLoggedInAt: DateTime | null
 
+  /** When the reader was last sent an edition by email. */
+  @column.dateTime()
+  declare lastEditionSentAt: DateTime | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

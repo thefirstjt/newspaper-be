@@ -2,10 +2,10 @@ import { DateTime } from 'luxon'
 import env from '#start/env'
 import { renderEditionEmail, editionSubject } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
-import { ResendEmailSender, FROM_NAME } from '#services/email/email_sender'
+import { makeEmailSender, FROM_NAME } from '#services/email/email_sender'
 import type { EmailSender } from '#services/email/email_sender'
 import type Edition from '#models/edition'
-import type User from '#models/user'
+import User from '#models/user'
 
 // The transport-agnostic sender lives in #services/email/email_sender; re-export
 // the parts the existing edition-mailer tests import from here.
@@ -43,7 +43,7 @@ export class EditionMailer {
     this.recipientName = options.recipientName ?? env.get('EMAIL_RECIPIENT_NAME', 'there')
     this.appUrl = options.appUrl ?? env.get('APP_URL')
     this.fromAddress = options.fromAddress ?? env.get('SMTP_FROM', 'newspaper@percussionlabs.ai')
-    this.sender = options.sender ?? new ResendEmailSender()
+    this.sender = options.sender ?? makeEmailSender()
   }
 
   async deliver(edition: Edition): Promise<void> {
@@ -68,6 +68,13 @@ export class EditionMailer {
     edition.status = 'emailed'
     edition.emailedAt = DateTime.now()
     await edition.save()
+
+    // Record on the reader when they were last sent an edition.
+    const reader = await User.find(edition.userId)
+    if (reader) {
+      reader.lastEditionSentAt = DateTime.now()
+      await reader.save()
+    }
   }
 }
 
