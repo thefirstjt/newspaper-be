@@ -1,0 +1,38 @@
+# Dependencies and build output — reinstalled/recompiled inside the image.
+node_modules
+build
+
+# Local runtime data — never copy into the image.
+tmp
+context
+*.sqlite3
+*.sqlite
+
+# Secrets and local env.
+.env
+.env.local
+.env.*.local
+
+# Version control and CI.
+.git
+.gitignore
+.github
+
+# Editor and OS cruft.
+.vscode
+.idea
+.fleet
+.DS_Store
+
+# Docker files themselves and project docs — not needed at build time.
+# (resources/context/**/*.md is kept: the build ships it as metaFiles.)
+Dockerfile
+.dockerignore
+docker-compose.yml
+README.md
+CLAUDE.md
+spec.md
+thoughts.md
+
+# Claude Code local config.
+.claude

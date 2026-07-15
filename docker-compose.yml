@@ -1,0 +1,104 @@
+# A complete stack for the newspaper backend: the API, a queue worker, MySQL and
+# Redis. Copy .env.example to .env and set at least APP_KEY (generate one with
+# `node ace generate:key`) and APP_URL before running `docker compose up`.
+#
+# DB_USER / DB_PASSWORD / DB_DATABASE are read from .env and shared between the
+# app and the MySQL service, so they always match.
+
+# Settings shared by every service that runs the app image.
+x-app: &app
+  build: .
+  image: newspaper-backend
+  env_file: .env
+  # These override whatever host/port are in .env so the containers reach the
+  # MySQL and Redis services on the compose network rather than 127.0.0.1.
+  environment: &app-env
+    DB_CONNECTION: mysql
+    DB_HOST: mysql
+    DB_PORT: 3306
+    QUEUE_REDIS_HOST: redis
+    QUEUE_REDIS_PORT: 6379
+  restart: unless-stopped
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-newspaper}
+      MYSQL_USER: ${DB_USER:-newspaper}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-newspaper}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-rootsecret}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${QUEUE_REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # One-shot: run migrations once MySQL is healthy, then exit. The app and worker
+  # wait for this to finish so no one races the schema.
+  migrate:
+    <<: *app
+    command: ['node', 'ace', 'migration:run', '--force']
+    restart: 'no'
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  app:
+    <<: *app
+    command: ['node', 'bin/server.js']
+    ports:
+      - '${PORT:-3333}:3333'
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3333/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Consumes the Redis-backed queue: edition builds and category generation are
+  # dispatched as jobs, so without this worker those features never run.
+  worker:
+    <<: *app
+    command: ['node', 'ace', 'queue:listen']
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  mysql-data:
+  redis-data:
