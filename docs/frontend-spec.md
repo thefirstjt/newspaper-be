@@ -28,11 +28,14 @@ people by email; each gets a magic link and walks the onboarding flow.
 ## 2. Tech, conventions & auth
 
 ### Base URL & CORS
-- All endpoints live under **`{API_BASE}/api/v1`**. Make the API base a build-time
-  env var (e.g. `VITE_API_BASE_URL`). In local dev the backend serves at
+- All endpoints live under **`{API_BASE}/api/v1`**. Put the API base in an env var
+  (`NEXT_PUBLIC_API_BASE_URL` for direct client calls, or a server-only
+  `API_BASE_URL` if you proxy — see §3). In local dev the backend serves at
   `http://localhost:3333`.
-- The backend has CORS enabled; the frontend origin must be added to its allow
-  list (a small backend config change — coordinate if you hit CORS errors).
+- If the browser calls the backend **directly**, its origin must be added to the
+  backend's CORS allow list (a small backend config change — coordinate if you hit
+  CORS errors). If you **proxy through Next.js Route Handlers** (recommended), all
+  browser calls are same-origin and CORS is a non-issue.
 
 ### Response envelope
 - **Success bodies are wrapped in `data`**: `{ "data": { ... } }`. Always read
@@ -115,10 +118,40 @@ next to the palette.
 - Source/section labels: small, uppercase, letter-spaced, in `#A676FC`.
 - Footer wordmark: "See Newspaper by Percussion Labs".
 
-### Suggested stack (not mandatory)
-React + TypeScript + a small data-fetching layer (TanStack Query works well given
-the CRUD), Tailwind (map the palette to tokens) or CSS modules, React Router. Keep
-it a straightforward SPA; SSR isn't required.
+### Stack & architecture — Next.js
+
+Build with **Next.js (App Router) + TypeScript**.
+
+- **Rendering:** the authenticated surfaces (reader app, admin, onboarding past
+  stage 1) are token-gated with a client-held bearer token, so those areas are
+  **client components** (`'use client'`) that fetch from the API. Public/marketing
+  or the magic-link landing can be static/server-rendered. Full SSR of reader data
+  isn't required.
+- **Data fetching:** use **TanStack Query** (or SWR) against the API — it fits the
+  CRUD-heavy config screens (caching, mutations, optimistic rate/discard). Wrap
+  the API in a small typed client (see below).
+- **Routing (App Router):** map the flows to routes — `/onboard` (magic-link
+  landing + stages), `/login`, the reader app under a route group (e.g.
+  `(reader)/today`, `(reader)/editions/[date]`, `(reader)/settings/*`,
+  `(reader)/submit`), and the admin console under `(admin)/admin/*`. Use layouts +
+  a guard (redirect to the right login/landing when the relevant token is absent).
+- **Auth token handling — two options:**
+  - *Simple:* keep the reader and admin tokens in `localStorage`, injected by a
+    per-surface fetch wrapper; on `401`, clear and redirect. (Requires the backend
+    to allow the frontend origin via CORS.)
+  - *More secure (recommended if easy):* proxy the API through Next.js **Route
+    Handlers** (`app/api/*`) and keep tokens in **httpOnly cookies** — this also
+    sidesteps CORS entirely, since the browser only ever calls same-origin
+    `/api/*`. Either is fine; pick one and be consistent.
+- **Styling:** **Tailwind CSS**, with the palette in §3 mapped to theme tokens
+  (e.g. `primary: #A676FC`, `ink: #1E1647`). Load **Lora** and **Geist** via
+  `next/font/google` (set them as CSS variables and wire into the Tailwind
+  `fontFamily` for `font-serif` = Lora headlines, `font-sans` = Geist body).
+- **Typed client:** generate it from `docs/openapi.yaml` (e.g. `@hey-api/openapi-ts`
+  or `orval`) so requests/responses are typed end-to-end, or at minimum generate
+  types with `openapi-typescript`.
+- **Env:** `NEXT_PUBLIC_API_BASE_URL` for the API origin (or, in the proxy
+  approach, a server-only `API_BASE_URL`).
 
 ---
 
@@ -490,9 +523,10 @@ states. Specific ones to not forget:
 
 ## 8. Notes, edge cases & non-goals
 
-- **Two apps, two tokens.** Keep the admin console's token separate from the
-  reader's. A shared axios/fetch client per surface with the right token
-  interceptor is cleanest.
+- **One Next.js app, two tokens.** Host the reader and admin surfaces as separate
+  route groups (e.g. `(reader)` and `(admin)`) in one app, but keep their tokens
+  strictly separate — a reader token is rejected on admin routes and vice-versa.
+  A fetch wrapper per surface that injects the right token is cleanest.
 - **Weekly/monthly readers**: an off-cadence day may simply have no edition
   (`/editions/today` → 404). That's normal; the empty state should reassure, and
   the reader can "Rebuild today's edition" if you expose Run now.
