@@ -55,20 +55,53 @@ export async function runDailyPipeline(
 }
 
 /**
+ * The result of asking for a build: either it was queued, or a build for this
+ * reader is already in flight and we left it alone.
+ */
+export type DispatchOutcome = 'queued' | 'already-running'
+
+/**
  * How the endpoint hands the daily build off to run in the background. Behind a
  * swappable factory so the endpoint can be exercised in tests without a real
  * queue (and therefore without Redis).
  */
 export interface DailyRunDispatcher {
-  dispatch(userId: string, date: string): Promise<void>
+  dispatch(userId: string, date: string): Promise<DispatchOutcome>
 }
 
-/** The real dispatch: enqueue the job onto the Redis-backed queue. */
+/**
+ * The real dispatch: enqueue the job onto the Redis-backed queue, but never more
+ * than one build at a time per reader. The queue job id is derived from the
+ * reader's id, so BullMQ refuses to add a second job while one with that id is
+ * still around — an atomic guard against a double-click or overlapping requests
+ * queuing two heavy builds. Finished jobs are removed immediately so a later
+ * (re)build can be queued again.
+ */
 class QueuedDailyRun implements DailyRunDispatcher {
-  async dispatch(userId: string, date: string): Promise<void> {
+  async dispatch(userId: string, date: string): Promise<DispatchOutcome> {
     const { default: queue } = await import('@rlanz/bull-queue/services/main')
     const { default: BuildEditionJob } = await import('#jobs/build_edition_job')
-    await queue.dispatch(BuildEditionJob, { userId, date })
+
+    // Note: BullMQ rejects a custom job id containing ':', so keep this dashed.
+    const jobId = `build-edition-${userId}`
+    const existing = await queue.getOrSet().getJob(jobId)
+    if (existing) {
+      const state = await existing.getState()
+      // A job still sitting under this id that hasn't finished means a build is
+      // already running for this reader — leave it be.
+      if (state !== 'completed' && state !== 'failed') {
+        return 'already-running'
+      }
+      // A finished job retained under this id would block re-adding it.
+      await existing.remove()
+    }
+
+    await queue.dispatch(
+      BuildEditionJob,
+      { userId, date },
+      { jobId, removeOnComplete: true, removeOnFail: true }
+    )
+    return 'queued'
   }
 }
 

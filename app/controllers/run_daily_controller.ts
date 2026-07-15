@@ -24,9 +24,16 @@ export default class RunDailyController {
       return response.unprocessableEntity({ error: 'Provide a valid date as YYYY-MM-DD.' })
     }
 
-    await makeDailyRunDispatcher().dispatch(user.id, date)
+    const channel = editionChannelFor(user.id)
+    const outcome = await makeDailyRunDispatcher().dispatch(user.id, date)
 
-    return response.accepted({ data: { channel: editionChannelFor(user.id) } })
+    // A build for this reader is already running — don't start a second one, but
+    // still hand back the channel so the frontend can listen for it to finish.
+    if (outcome === 'already-running') {
+      return response.conflict({ error: 'An edition build is already in progress.', data: { channel } })
+    }
+
+    return response.accepted({ data: { channel } })
   }
 
   /**

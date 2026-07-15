@@ -7,6 +7,7 @@ import {
   setDailyRunDispatcher,
   resetDailyRunDispatcher,
 } from '#services/edition/daily_run'
+import type { DispatchOutcome } from '#services/edition/daily_run'
 
 let counter = 0
 async function reader() {
@@ -28,8 +29,9 @@ test.group('Run daily', (group) => {
   group.each.setup(() => {
     dispatched = []
     setDailyRunDispatcher(() => ({
-      async dispatch(userId, date) {
+      async dispatch(userId, date): Promise<DispatchOutcome> {
         dispatched.push({ userId, date })
+        return 'queued'
       },
     }))
   })
@@ -73,6 +75,25 @@ test.group('Run daily', (group) => {
       .loginAs(user)
     response.assertStatus(422)
     assert.lengthOf(dispatched, 0)
+  })
+
+  test('returns 409 when a build is already in progress for the reader', async ({
+    client,
+    assert,
+  }) => {
+    const user = await reader()
+    setDailyRunDispatcher(() => ({
+      async dispatch(): Promise<DispatchOutcome> {
+        return 'already-running'
+      },
+    }))
+
+    const response = await client.post('/api/v1/run-daily').loginAs(user)
+
+    response.assertStatus(409)
+    // The channel is still returned so the frontend can listen for the running
+    // build to finish.
+    assert.equal(response.body().data.channel, editionChannelFor(user.id))
   })
 
   test('requires authentication', async ({ client, assert }) => {
