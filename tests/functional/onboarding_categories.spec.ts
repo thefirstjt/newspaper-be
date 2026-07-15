@@ -8,6 +8,13 @@ import {
   setInterestCategorization,
   resetInterestCategorization,
 } from '#services/onboarding/interest_categorization'
+import {
+  generateCategoriesAndSources,
+  categoriesChannelFor,
+  setCategoryGenerationDispatcher,
+  resetCategoryGenerationDispatcher,
+} from '#services/onboarding/category_generation'
+import type { CategoryGenerationInput } from '#services/onboarding/category_generation'
 import type { DiscoveredSource } from '#services/orchestrator/source_discoverer'
 import type { CategoryPlan } from '#services/orchestrator/interest_categorizer'
 
@@ -39,7 +46,61 @@ function categorizationReturning(categories: CategoryPlan[]) {
   }))
 }
 
-test.group('Onboarding — categories (stage 3)', (group) => {
+test.group('Onboarding — categories endpoint (stage 3)', (group) => {
+  group.setup(() => testUtils.db().migrate())
+  group.each.setup(() => testUtils.db().truncate())
+
+  // Swap the real (Redis-backed) dispatcher for one that just records calls, so
+  // the endpoint can be tested without a queue running.
+  let dispatched: { userId: string; input: CategoryGenerationInput }[] = []
+  group.each.setup(() => {
+    dispatched = []
+    setCategoryGenerationDispatcher(() => ({
+      async dispatch(userId, input) {
+        dispatched.push({ userId, input })
+      },
+    }))
+  })
+  group.teardown(() => resetCategoryGenerationDispatcher())
+
+  test('queues generation and returns the reader’s channel', async ({ client, assert }) => {
+    const user = await reader()
+
+    const response = await client
+      .post('/api/v1/onboarding/categories')
+      .json({ categories: [{ title: 'AI News', description: 'How the world talks about AI.' }] })
+      .loginAs(user)
+
+    response.assertStatus(202)
+    assert.equal(response.body().data.channel, categoriesChannelFor(user.id))
+
+    // The work was handed to the queue with the reader and their input, and
+    // nothing was generated inline.
+    assert.lengthOf(dispatched, 1)
+    assert.equal(dispatched[0].userId, user.id)
+    assert.deepEqual(dispatched[0].input.categories, [
+      { title: 'AI News', description: 'How the world talks about AI.' },
+    ])
+    assert.lengthOf(await Category.query().where('user_id', user.id), 0)
+  })
+
+  test('rejects a request with neither categories nor interests', async ({ client, assert }) => {
+    const user = await reader()
+    const response = await client.post('/api/v1/onboarding/categories').json({}).loginAs(user)
+    response.assertStatus(422)
+    assert.lengthOf(dispatched, 0)
+  })
+
+  test('requires authentication', async ({ client, assert }) => {
+    const response = await client
+      .post('/api/v1/onboarding/categories')
+      .json({ categories: [{ title: 'X' }] })
+    response.assertStatus(401)
+    assert.lengthOf(dispatched, 0)
+  })
+})
+
+test.group('Category generation (queued work)', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
   group.teardown(() => {
@@ -47,25 +108,18 @@ test.group('Onboarding — categories (stage 3)', (group) => {
     resetInterestCategorization()
   })
 
-  test('creates categories with unique slugs and their verified sources', async ({
-    client,
-    assert,
-  }) => {
+  test('creates categories with unique slugs and their verified sources', async ({ assert }) => {
     discoveryReturning([
       { name: 'Stripe Engineering', feedUrl: 'https://stripe.com/blog/feed.rss' },
     ])
     const user = await reader()
 
-    const response = await client
-      .post('/api/v1/onboarding/categories')
-      .json({
-        categories: [
-          { title: 'AI News', description: 'How the world talks about AI.' },
-          { title: 'AI News' },
-        ],
-      })
-      .loginAs(user)
-    response.assertStatus(200)
+    await generateCategoriesAndSources(user, {
+      categories: [
+        { title: 'AI News', description: 'How the world talks about AI.' },
+        { title: 'AI News' },
+      ],
+    })
 
     const categories = await Category.query().where('user_id', user.id).orderBy('id')
     assert.deepEqual(
@@ -81,27 +135,21 @@ test.group('Onboarding — categories (stage 3)', (group) => {
   })
 
   test('a category whose feeds all fail verification is created with no sources', async ({
-    client,
     assert,
   }) => {
     discoveryReturning([])
     const user = await reader()
 
-    const response = await client
-      .post('/api/v1/onboarding/categories')
-      .json({ categories: [{ title: 'Obscure Topic' }] })
-      .loginAs(user)
-    response.assertStatus(200)
+    const created = await generateCategoriesAndSources(user, {
+      categories: [{ title: 'Obscure Topic' }],
+    })
 
-    assert.lengthOf(response.body().data.categories[0].sources, 0)
+    assert.lengthOf(created[0].sources, 0)
     assert.lengthOf(await Category.query().where('user_id', user.id), 1)
     assert.lengthOf(await Source.query().where('user_id', user.id), 0)
   })
 
-  test('categorises free-text interests into categories with sources', async ({
-    client,
-    assert,
-  }) => {
+  test('categorises free-text interests into categories with sources', async ({ assert }) => {
     categorizationReturning([
       { title: 'Engineering', description: 'Deep engineering writing.' },
       { title: 'Global AI News', description: 'How the world talks about AI.' },
@@ -111,11 +159,9 @@ test.group('Onboarding — categories (stage 3)', (group) => {
     ])
     const user = await reader()
 
-    const response = await client
-      .post('/api/v1/onboarding/categories')
-      .json({ interests: 'I love distributed systems and keeping up with AI in the world.' })
-      .loginAs(user)
-    response.assertStatus(200)
+    await generateCategoriesAndSources(user, {
+      interests: 'I love distributed systems and keeping up with AI in the world.',
+    })
 
     const categories = await Category.query().where('user_id', user.id).orderBy('id')
     assert.deepEqual(
@@ -124,18 +170,5 @@ test.group('Onboarding — categories (stage 3)', (group) => {
     )
     // A discovered source per derived category.
     assert.lengthOf(await Source.query().where('user_id', user.id), 2)
-  })
-
-  test('rejects a request with neither categories nor interests', async ({ client }) => {
-    const user = await reader()
-    const response = await client.post('/api/v1/onboarding/categories').json({}).loginAs(user)
-    response.assertStatus(422)
-  })
-
-  test('requires authentication', async ({ client }) => {
-    const response = await client
-      .post('/api/v1/onboarding/categories')
-      .json({ categories: [{ title: 'X' }] })
-    response.assertStatus(401)
   })
 })

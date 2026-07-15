@@ -31,6 +31,7 @@ export interface ApiDefinition {
     adminInvitations: {
       store: typeof routes['admin.admin_invitations.store']
       index: typeof routes['admin.admin_invitations.index']
+      resend: typeof routes['admin.admin_invitations.resend']
     }
     adminUsers: {
       index: typeof routes['admin.admin_users.index']
@@ -81,4 +82,7 @@ export interface ApiDefinition {
       updateGapTopics: typeof routes['newspaper.config.update_gap_topics']
     }
   }
+  eventStream: typeof routes['event_stream']
+  subscribe: typeof routes['subscribe']
+  unsubscribe: typeof routes['unsubscribe']
 }

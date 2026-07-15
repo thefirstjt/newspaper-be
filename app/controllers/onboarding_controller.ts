@@ -1,22 +1,14 @@
 import db from '@adonisjs/lucid/services/db'
 import Invitation from '#models/invitation'
 import User from '#models/user'
-import Category from '#models/category'
-import Source from '#models/source'
 import { seedAccountBasics } from '#services/onboarding/user_seeder'
-import { contextStoreFor } from '#services/context/context_store_manager'
-import { makeSourceDiscovery } from '#services/onboarding/source_discovery'
-import { makeInterestCategorization } from '#services/onboarding/interest_categorization'
+import {
+  categoriesChannelFor,
+  makeCategoryGenerationDispatcher,
+} from '#services/onboarding/category_generation'
 import { acceptInvitationValidator, onboardingCategoriesValidator } from '#validators/onboarding'
-import { presentCategory } from '#transformers/newspaper_presenter'
 import UserTransformer from '#transformers/user_transformer'
 import type { HttpContext } from '@adonisjs/core/http'
-
-// How many items a discovered category surfaces per day, and how deep its pool
-// goes — the same defaults the shipped config uses for its categories.
-const DEFAULT_MIN = 1
-const DEFAULT_MAX = 2
-const DEFAULT_POOL_SIZE = 6
 
 /**
  * The reader-facing onboarding flow, entered through an invitation's magic link.
@@ -77,89 +69,24 @@ export default class OnboardingController {
 
   /**
    * Stage 3: the reader either names the categories they want or describes their
-   * interests in free text (which the model turns into categories). For each
-   * category the model then suggests sources whose feeds we verify, keeping only
-   * the ones that resolve. Returns the categories with their sources — the
-   * stage-4 view. This runs synchronously for now; a future version would queue
-   * the discovery per category and notify when it is ready.
+   * interests in free text (which the model turns into categories). Building the
+   * categories and discovering their sources is slow — LLM calls plus feed
+   * checks — so it is queued rather than run inline. We return the reader's
+   * Transmit channel; the frontend shows a loader and subscribes, and the job
+   * broadcasts the finished categories (or a failure) there when it is done.
    */
-  async categories({ auth, request, serialize, response }: HttpContext) {
+  async categories({ auth, request, response }: HttpContext) {
     const user = auth.use('api').getUserOrFail()
     const { categories, interests } = await request.validateUsing(onboardingCategoriesValidator)
 
-    const persona = await contextStoreFor(user.id).read('persona')
-
-    // Resolve the categories to build: the model turns free-text interests into
-    // them (tailored to the reader's persona), otherwise the reader's own list is
-    // used.
-    let plan: { title: string; description?: string }[]
-    if (interests) {
-      plan = await makeInterestCategorization().categorize(interests, persona)
-    } else if (categories) {
-      plan = categories
-    } else {
+    if (!categories && !interests) {
       return response.unprocessableEntity({
         error: 'Provide either a list of categories or your interests.',
       })
     }
 
-    const discovery = makeSourceDiscovery()
-    const existing = await Category.query().where('user_id', user.id)
-    const takenKeys = new Set(existing.map((category) => category.key))
+    await makeCategoryGenerationDispatcher().dispatch(user.id, { categories, interests })
 
-    const created: Category[] = []
-    for (const input of plan) {
-      const key = uniqueSlug(input.title, takenKeys)
-      takenKeys.add(key)
-
-      const category = await Category.create({
-        userId: user.id,
-        key,
-        title: input.title,
-        min: DEFAULT_MIN,
-        max: DEFAULT_MAX,
-        poolSize: DEFAULT_POOL_SIZE,
-        relevanceHint: input.description ?? input.title,
-      })
-
-      const sources = await discovery.discoverVerified({
-        categoryTitle: category.title,
-        relevanceHint: category.relevanceHint,
-        persona,
-      })
-      for (const source of sources) {
-        await Source.create({
-          userId: user.id,
-          categoryId: category.id,
-          type: 'rss',
-          name: source.name,
-          settings: { feedUrl: source.feedUrl },
-          enabled: true,
-        })
-      }
-
-      await category.load('sources')
-      created.push(category)
-    }
-
-    return serialize({ categories: created.map((category) => presentCategory(category)) })
+    return response.accepted({ data: { channel: categoriesChannelFor(user.id) } })
   }
-}
-
-/** Turns a title into a slug unique among the reader's category keys. */
-function uniqueSlug(title: string, taken: Set<string>): string {
-  const base =
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'category'
-
-  if (!taken.has(base)) {
-    return base
-  }
-  let suffix = 2
-  while (taken.has(`${base}-${suffix}`)) {
-    suffix += 1
-  }
-  return `${base}-${suffix}`
 }

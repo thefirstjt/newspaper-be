@@ -72,6 +72,12 @@ const routes = {
     tokens: [{"old":"/api/v1/admin/invitations","type":0,"val":"api","end":""},{"old":"/api/v1/admin/invitations","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/invitations","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/invitations","type":0,"val":"invitations","end":""}],
     types: placeholder as Registry['admin.admin_invitations.index']['types'],
   },
+  'admin.admin_invitations.resend': {
+    methods: ["POST"],
+    pattern: '/api/v1/admin/invitations/:id/resend',
+    tokens: [{"old":"/api/v1/admin/invitations/:id/resend","type":0,"val":"api","end":""},{"old":"/api/v1/admin/invitations/:id/resend","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/invitations/:id/resend","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/invitations/:id/resend","type":0,"val":"invitations","end":""},{"old":"/api/v1/admin/invitations/:id/resend","type":1,"val":"id","end":""},{"old":"/api/v1/admin/invitations/:id/resend","type":0,"val":"resend","end":""}],
+    types: placeholder as Registry['admin.admin_invitations.resend']['types'],
+  },
   'admin.admin_users.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/admin/users',
@@ -227,6 +233,24 @@ const routes = {
     pattern: '/api/v1/config/gap-topics',
     tokens: [{"old":"/api/v1/config/gap-topics","type":0,"val":"api","end":""},{"old":"/api/v1/config/gap-topics","type":0,"val":"v1","end":""},{"old":"/api/v1/config/gap-topics","type":0,"val":"config","end":""},{"old":"/api/v1/config/gap-topics","type":0,"val":"gap-topics","end":""}],
     types: placeholder as Registry['newspaper.config.update_gap_topics']['types'],
+  },
+  'event_stream': {
+    methods: ["GET","HEAD"],
+    pattern: '/__transmit/events',
+    tokens: [{"old":"/__transmit/events","type":0,"val":"__transmit","end":""},{"old":"/__transmit/events","type":0,"val":"events","end":""}],
+    types: placeholder as Registry['event_stream']['types'],
+  },
+  'subscribe': {
+    methods: ["POST"],
+    pattern: '/__transmit/subscribe',
+    tokens: [{"old":"/__transmit/subscribe","type":0,"val":"__transmit","end":""},{"old":"/__transmit/subscribe","type":0,"val":"subscribe","end":""}],
+    types: placeholder as Registry['subscribe']['types'],
+  },
+  'unsubscribe': {
+    methods: ["POST"],
+    pattern: '/__transmit/unsubscribe',
+    tokens: [{"old":"/__transmit/unsubscribe","type":0,"val":"__transmit","end":""},{"old":"/__transmit/unsubscribe","type":0,"val":"unsubscribe","end":""}],
+    types: placeholder as Registry['unsubscribe']['types'],
   },
 } as const satisfies Record<string, AdonisEndpoint>
 

@@ -15,6 +15,7 @@ export type ScannedRoutes = {
     'admin.admin_sessions.destroy': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.store': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.index': { paramsTuple?: []; params?: {} }
+    'admin.admin_invitations.resend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.admin_users.index': { paramsTuple?: []; params?: {} }
     'admin.admin_users.toggle_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.admin_users.send_edition': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -41,6 +42,9 @@ export type ScannedRoutes = {
     'newspaper.config.update_schedule': { paramsTuple?: []; params?: {} }
     'newspaper.config.gap_topics': { paramsTuple?: []; params?: {} }
     'newspaper.config.update_gap_topics': { paramsTuple?: []; params?: {} }
+    'event_stream': { paramsTuple?: []; params?: {} }
+    'subscribe': { paramsTuple?: []; params?: {} }
+    'unsubscribe': { paramsTuple?: []; params?: {} }
   }
   GET: {
     'onboarding.onboarding.invitation': { paramsTuple?: []; params?: {} }
@@ -56,6 +60,7 @@ export type ScannedRoutes = {
     'newspaper.sources.index': { paramsTuple?: []; params?: {} }
     'newspaper.config.show_schedule': { paramsTuple?: []; params?: {} }
     'newspaper.config.gap_topics': { paramsTuple?: []; params?: {} }
+    'event_stream': { paramsTuple?: []; params?: {} }
   }
   HEAD: {
     'onboarding.onboarding.invitation': { paramsTuple?: []; params?: {} }
@@ -71,6 +76,7 @@ export type ScannedRoutes = {
     'newspaper.sources.index': { paramsTuple?: []; params?: {} }
     'newspaper.config.show_schedule': { paramsTuple?: []; params?: {} }
     'newspaper.config.gap_topics': { paramsTuple?: []; params?: {} }
+    'event_stream': { paramsTuple?: []; params?: {} }
   }
   POST: {
     'auth.access_tokens.store': { paramsTuple?: []; params?: {} }
@@ -80,6 +86,7 @@ export type ScannedRoutes = {
     'admin.admin_sessions.store': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.destroy': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.store': { paramsTuple?: []; params?: {} }
+    'admin.admin_invitations.resend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.admin_users.toggle_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.admin_users.send_edition': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.items.rate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -90,6 +97,8 @@ export type ScannedRoutes = {
     'newspaper.run_daily.store': { paramsTuple?: []; params?: {} }
     'newspaper.categories.store': { paramsTuple?: []; params?: {} }
     'newspaper.sources.store': { paramsTuple?: []; params?: {} }
+    'subscribe': { paramsTuple?: []; params?: {} }
+    'unsubscribe': { paramsTuple?: []; params?: {} }
   }
   PUT: {
     'newspaper.persona.update': { paramsTuple?: []; params?: {} }

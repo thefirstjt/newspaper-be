@@ -139,6 +139,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/invitations_controller').default['index']>>>
     }
   }
+  'admin.admin_invitations.resend': {
+    methods: ["POST"]
+    pattern: '/api/v1/admin/invitations/:id/resend'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/invitations_controller').default['resend']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/invitations_controller').default['resend']>>>
+    }
+  }
   'admin.admin_users.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/admin/users'
@@ -449,6 +461,42 @@ export interface Registry {
       query: ExtractQuery<InferInput<(typeof import('#validators/config').gapTopicsValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/config_controller').default['updateGapTopics']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/config_controller').default['updateGapTopics']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'event_stream': {
+    methods: ["GET","HEAD"]
+    pattern: '/__transmit/events'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
+    }
+  }
+  'subscribe': {
+    methods: ["POST"]
+    pattern: '/__transmit/subscribe'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
+    }
+  }
+  'unsubscribe': {
+    methods: ["POST"]
+    pattern: '/__transmit/unsubscribe'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: unknown
+      errorResponse: unknown
     }
   }
 }

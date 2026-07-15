@@ -79,4 +79,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   TELEGRAM_BOT_TOKEN: Env.schema.string.optional(),
   // Only messages from this chat id are accepted, so no one else can feed links.
   TELEGRAM_ALLOWED_CHAT_ID: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for @rlanz/bull-queue
+  |----------------------------------------------------------
+  */
+  QUEUE_REDIS_HOST: Env.schema.string({ format: 'host' }),
+  QUEUE_REDIS_PORT: Env.schema.number(),
+  QUEUE_REDIS_PASSWORD: Env.schema.string.optional()
 })
