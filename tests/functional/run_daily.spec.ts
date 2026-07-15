@@ -51,6 +51,30 @@ test.group('Run daily', (group) => {
     assert.equal(dispatched[0].date, DateTime.now().toISODate())
   })
 
+  test('rebuilds a specific date when one is given', async ({ client, assert }) => {
+    const user = await reader()
+
+    const response = await client
+      .post('/api/v1/run-daily')
+      .json({ date: '2026-07-01' })
+      .loginAs(user)
+
+    response.assertStatus(202)
+    assert.equal(response.body().data.channel, editionChannelFor(user.id))
+    assert.lengthOf(dispatched, 1)
+    assert.equal(dispatched[0].date, '2026-07-01')
+  })
+
+  test('rejects an invalid date', async ({ client, assert }) => {
+    const user = await reader()
+    const response = await client
+      .post('/api/v1/run-daily')
+      .json({ date: 'not-a-date' })
+      .loginAs(user)
+    response.assertStatus(422)
+    assert.lengthOf(dispatched, 0)
+  })
+
   test('requires authentication', async ({ client, assert }) => {
     const response = await client.post('/api/v1/run-daily')
     response.assertStatus(401)
