@@ -7,14 +7,16 @@ import { dbAssertions } from '@adonisjs/lucid/plugins/db'
 import testUtils from '@adonisjs/core/services/test_utils'
 import { authApiClient } from '@adonisjs/auth/plugins/api_client'
 import { sessionApiClient } from '@adonisjs/session/plugins/api_client'
-import type { Registry } from '../.adonisjs/client/registry/schema.d.ts'
 
 /**
- * This file is imported by the "bin/test.ts" entrypoint file
+ * This file is imported by the "bin/test.ts" entrypoint file.
+ *
+ * Note: the api client is intentionally NOT bound to the generated route
+ * registry. That typed client infers `.body()` as a union across methods sharing
+ * a path and enforces request bodies, which fights ordinary test patterns
+ * (asserting a POST's response fields, or posting an invalid body to check a
+ * 422). Leaving it untyped keeps tests resilient to registry regeneration.
  */
-declare module '@japa/api-client/types' {
-  interface RoutesRegistry extends Registry {}
-}
 
 /**
  * This file is imported by the "bin/test.ts" entrypoint file
