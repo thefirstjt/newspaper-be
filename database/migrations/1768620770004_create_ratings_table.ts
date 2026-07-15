@@ -15,6 +15,7 @@ export default class extends BaseSchema {
         .index()
       table
         .integer('item_id')
+        .unsigned()
         .notNullable()
         .unique()
         .references('id')

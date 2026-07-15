@@ -23,6 +23,7 @@ export default class extends BaseSchema {
         .onDelete('SET NULL')
       table
         .integer('invited_by_admin_id')
+        .unsigned()
         .nullable()
         .references('id')
         .inTable('admins')

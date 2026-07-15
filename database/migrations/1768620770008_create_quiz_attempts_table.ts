@@ -15,6 +15,7 @@ export default class extends BaseSchema {
         .index()
       table
         .integer('quiz_question_id')
+        .unsigned()
         .notNullable()
         .references('id')
         .inTable('quiz_questions')
