@@ -35,7 +35,10 @@ RUN node ace build
 
 # Final runtime image: just the production deps and the compiled app.
 FROM base AS production
+# TZ sets the timezone reader run times are interpreted in; override it to match
+# your readers (e.g. Europe/London). The rest are sensible production defaults.
 ENV NODE_ENV=production \
+    TZ=UTC \
     HOST=0.0.0.0 \
     PORT=3333 \
     LOG_LEVEL=info \

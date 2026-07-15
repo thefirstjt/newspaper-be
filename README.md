@@ -82,17 +82,35 @@ restarts.
 
 ### Services
 
-| Service   | Command                        | Purpose                                                        |
-| --------- | ------------------------------ | -------------------------------------------------------------- |
-| `app`     | `node bin/server.js`           | The HTTP API.                                                  |
-| `worker`  | `node ace queue:listen`        | Consumes queued jobs — edition builds and category generation. |
-| `migrate` | `node ace migration:run --force` | One-shot; runs on startup before `app`/`worker`.             |
-| `mysql`   | —                              | Database.                                                      |
-| `redis`   | —                              | Job queue backend.                                             |
+| Service     | Command                          | Purpose                                                        |
+| ----------- | -------------------------------- | -------------------------------------------------------------- |
+| `app`       | `node bin/server.js`             | The HTTP API.                                                  |
+| `worker`    | `node ace queue:listen`          | Consumes queued jobs — edition builds and category generation. |
+| `scheduler` | `node ace newspaper:scheduler`   | Fires each reader's daily build at their configured run time.  |
+| `migrate`   | `node ace migration:run --force` | One-shot; runs on startup before the app services.             |
+| `mysql`     | —                                | Database.                                                      |
+| `redis`     | —                                | Job queue backend.                                             |
 
 > The **worker is not optional**: edition builds and onboarding category
 > generation are dispatched as Redis jobs, so without it those features never
 > run.
+
+### Daily scheduling
+
+The `scheduler` service runs continuously and, every minute, queues a build for
+each active reader whose configured run time (`runTime` in their settings, and
+whose email frequency lands on the day) has arrived — the worker then builds and
+emails the edition. Run **one** scheduler instance so builds aren't dispatched
+twice.
+
+Run times are interpreted in the container's timezone, set by `TZ` (defaults to
+`UTC` in the image). To (re)build editions by hand instead — for a backfill or a
+one-off — use the command directly:
+
+```bash
+docker compose exec app node ace newspaper:run-daily            # all readers, today
+docker compose exec app node ace newspaper:run-daily --user=you@example.com --date=2026-07-01
+```
 
 ### Deploying without compose
 

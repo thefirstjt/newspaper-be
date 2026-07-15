@@ -99,6 +99,19 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Fires each reader's daily edition build at the time they configured. Keep a
+  # single instance — it dispatches onto the same queue the worker drains.
+  scheduler:
+    <<: *app
+    command: ['node', 'ace', 'newspaper:scheduler']
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   mysql-data:
   redis-data:
