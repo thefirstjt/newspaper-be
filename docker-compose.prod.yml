@@ -69,8 +69,10 @@ services:
   app:
     <<: *app
     command: ['node', 'bin/server.js']
-    ports:
-      - '${PORT:-3333}:3333'
+    # No host port — the app is reached only through Caddy on the compose
+    # network, so it is never exposed directly to the internet.
+    expose:
+      - '3333'
     depends_on:
       mysql:
         condition: service_healthy
@@ -104,6 +106,24 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Reverse proxy with automatic HTTPS. It terminates TLS for the domain and
+  # forwards to the app over the internal network. Certificates are stored in the
+  # caddy-data volume so they survive restarts and are not re-requested.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
 volumes:
   mysql-data:
   redis-data:
+  caddy-data:
+  caddy-config:

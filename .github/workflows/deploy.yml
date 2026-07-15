@@ -46,13 +46,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy compose file to droplet
+      - name: Copy compose + proxy config to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: docker-compose.prod.yml
+          source: docker-compose.prod.yml,Caddyfile
           target: /opt/newspaper/
 
       - name: Pull and restart on droplet
