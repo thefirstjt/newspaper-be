@@ -1,6 +1,7 @@
 import { generateText, Output } from 'ai'
 import { modelFor } from '#services/orchestrator/models'
 import { interestCategoriesSchema } from '#services/orchestrator/schemas'
+import { buildMessageUsingContext } from '#services/orchestrator/helpers'
 import { INTEREST_CATEGORIZATION_SYSTEM_PROMPT } from '#services/orchestrator/prompts'
 import { AgentTask } from '#services/orchestrator/types'
 import type { ModelResolver } from '#services/orchestrator/types'
@@ -22,11 +23,17 @@ export interface CategoryPlan {
 export class InterestCategorizer {
   constructor(private getModelFor: ModelResolver = modelFor) {}
 
-  async categorize(interests: string): Promise<CategoryPlan[]> {
+  /**
+   * Groups the reader's free-text interests into categories, tailoring them to
+   * the reader's persona when one is provided.
+   */
+  async categorize(interests: string, persona = ''): Promise<CategoryPlan[]> {
+    const userMessage = `The reader describes their interests as:\n${interests}`
+
     const { output } = await generateText({
       model: this.getModelFor(AgentTask.GENERATION),
       system: INTEREST_CATEGORIZATION_SYSTEM_PROMPT,
-      prompt: `The reader describes their interests as:\n${interests}`,
+      messages: buildMessageUsingContext(persona, userMessage),
       output: Output.object({ schema: interestCategoriesSchema }),
     })
 

@@ -87,11 +87,14 @@ export default class OnboardingController {
     const user = auth.use('api').getUserOrFail()
     const { categories, interests } = await request.validateUsing(onboardingCategoriesValidator)
 
+    const persona = await contextStoreFor(user.id).read('persona')
+
     // Resolve the categories to build: the model turns free-text interests into
-    // them, otherwise the reader's own list is used.
+    // them (tailored to the reader's persona), otherwise the reader's own list is
+    // used.
     let plan: { title: string; description?: string }[]
     if (interests) {
-      plan = await makeInterestCategorization().categorize(interests)
+      plan = await makeInterestCategorization().categorize(interests, persona)
     } else if (categories) {
       plan = categories
     } else {
@@ -100,7 +103,6 @@ export default class OnboardingController {
       })
     }
 
-    const persona = await contextStoreFor(user.id).read('persona')
     const discovery = makeSourceDiscovery()
     const existing = await Category.query().where('user_id', user.id)
     const takenKeys = new Set(existing.map((category) => category.key))

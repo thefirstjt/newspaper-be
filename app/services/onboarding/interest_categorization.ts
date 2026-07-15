@@ -7,7 +7,7 @@ import type { CategoryPlan } from '#services/orchestrator/interest_categorizer'
  * model.
  */
 export interface InterestCategorization {
-  categorize(interests: string): Promise<CategoryPlan[]>
+  categorize(interests: string, persona?: string): Promise<CategoryPlan[]>
 }
 
 let factory: () => InterestCategorization = () => new InterestCategorizer()

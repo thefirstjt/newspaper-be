@@ -36,7 +36,8 @@ test.group('InterestCategorizer.categorize', () => {
     )
 
     const categories = await categorizer.categorize(
-      'I love distributed systems, databases, and how big software is built.'
+      'I love distributed systems, databases, and how big software is built.',
+      'A senior engineer who values depth.'
     )
 
     assert.deepEqual(tasks, [AgentTask.GENERATION])
@@ -44,7 +45,10 @@ test.group('InterestCategorizer.categorize', () => {
       { title: 'Engineering & Systems', description: 'Deep engineering writing.' },
     ])
 
+    // Both the interests and the persona are given to the model.
     const userMessage = calls[0].prompt.find((message: any) => message.role === 'user')
-    assert.include(userMessage.content[0].text, 'distributed systems')
+    const text = userMessage.content.map((part: any) => part.text).join('\n')
+    assert.include(text, 'distributed systems')
+    assert.include(text, 'A senior engineer who values depth.')
   })
 })
