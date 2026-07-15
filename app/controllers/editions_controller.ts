@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import Edition from '#models/edition'
+import Category from '#models/category'
 import { presentEdition } from '#transformers/newspaper_presenter'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -34,6 +35,8 @@ export default class EditionsController {
       return response.notFound({ error: `There is no edition for ${date}.` })
     }
 
-    return serialize(presentEdition(edition, edition.items, edition.quizQuestions))
+    const categories = await Category.query().where('user_id', user.id).orderBy('id')
+
+    return serialize(presentEdition(edition, edition.items, edition.quizQuestions, categories))
   }
 }

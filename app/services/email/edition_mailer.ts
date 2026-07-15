@@ -6,6 +6,7 @@ import { makeEmailSender, FROM_NAME } from '#services/email/email_sender'
 import type { EmailSender } from '#services/email/email_sender'
 import type Edition from '#models/edition'
 import User from '#models/user'
+import Category from '#models/category'
 
 // The transport-agnostic sender lives in #services/email/email_sender; re-export
 // the parts the existing edition-mailer tests import from here.
@@ -56,7 +57,8 @@ export class EditionMailer {
     )
     await edition.load('quizQuestions')
 
-    const view = presentEdition(edition, edition.items, edition.quizQuestions)
+    const categories = await Category.query().where('user_id', edition.userId).orderBy('id')
+    const view = presentEdition(edition, edition.items, edition.quizQuestions, categories)
 
     await this.sender.send({
       from: `${FROM_NAME} <${this.fromAddress}>`,

@@ -1,4 +1,3 @@
-import newspaperConfig from '#config/newspaper'
 import type Edition from '#models/edition'
 import type Item from '#models/item'
 import type QuizQuestion from '#models/quiz_question'
@@ -46,20 +45,38 @@ export function presentQuizQuestion(question: QuizQuestion) {
 
 /**
  * The whole edition: its key learning, its surfaced items grouped under the
- * categories they belong to, and the day's quiz. Only categories that have a
- * surfaced item appear.
+ * categories they belong to, and the day's quiz. The reader's own categories
+ * (not a fixed global list) define the sections and their order; only
+ * categories that have a surfaced item appear. If an item's category has since
+ * been removed, it is still shown under its key so nothing is silently dropped.
  */
 export function presentEdition(
   edition: Edition,
   surfacedItems: Item[],
-  quizQuestions: QuizQuestion[]
+  quizQuestions: QuizQuestion[],
+  readerCategories: Category[]
 ) {
-  const categories = newspaperConfig.categories
-    .map((category) => ({
-      key: category.key,
-      title: category.title,
+  const titleByKey = new Map(readerCategories.map((category) => [category.key, category.title]))
+
+  // The reader's own category order first, then any orphaned keys still on
+  // items, so a deleted category never hides its surfaced stories.
+  const orderedKeys: string[] = []
+  const seenKeys = new Set<string>()
+  for (const key of [
+    ...readerCategories.map((category) => category.key),
+    ...surfacedItems.map((item) => item.categoryKey),
+  ]) {
+    if (seenKeys.has(key)) continue
+    seenKeys.add(key)
+    orderedKeys.push(key)
+  }
+
+  const categories = orderedKeys
+    .map((key) => ({
+      key,
+      title: titleByKey.get(key) ?? key,
       items: surfacedItems
-        .filter((item) => item.categoryKey === category.key)
+        .filter((item) => item.categoryKey === key)
         .map((item) => presentItem(item)),
     }))
     .filter((category) => category.items.length > 0)

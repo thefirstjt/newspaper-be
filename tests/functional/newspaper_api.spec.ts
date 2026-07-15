@@ -8,6 +8,7 @@ import Rating from '#models/rating'
 import SeenUrl from '#models/seen_url'
 import QuizQuestion from '#models/quiz_question'
 import SubmittedLink from '#models/submitted_link'
+import Category from '#models/category'
 
 let counter = 0
 async function reader() {
@@ -55,6 +56,15 @@ test.group('Newspaper API', (group) => {
     assert,
   }) => {
     const user = await reader()
+    await Category.create({
+      userId: user.id,
+      key: 'eng-blogs',
+      title: 'Engineering blogs',
+      min: 1,
+      max: 3,
+      poolSize: 6,
+      relevanceHint: 'Deep engineering writing.',
+    })
     const edition = await Edition.create({
       userId: user.id,
       date: today,
@@ -91,6 +101,8 @@ test.group('Newspaper API', (group) => {
     assert.equal(body.keyLearning, 'Today you learned about consistency.')
     assert.lengthOf(body.categories, 1)
     assert.equal(body.categories[0].key, 'eng-blogs')
+    // The section is titled from the reader's own category, not a global config.
+    assert.equal(body.categories[0].title, 'Engineering blogs')
 
     const titles = body.categories[0].items.map((item: { title: string }) => item.title)
     assert.deepEqual(titles, ['Surfaced'])

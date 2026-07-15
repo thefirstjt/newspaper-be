@@ -4,6 +4,7 @@ import User from '#models/user'
 import Edition from '#models/edition'
 import Item from '#models/item'
 import QuizQuestion from '#models/quiz_question'
+import Category from '#models/category'
 import { renderEditionEmail } from '#mails/edition_digest'
 import { presentEdition } from '#transformers/newspaper_presenter'
 import { EditionMailer } from '#services/email/edition_mailer'
@@ -27,6 +28,15 @@ async function editionWithContent(date: string) {
     name: 'Reader',
     email: `reader-${counter}@example.com`,
     password: 'secret123',
+  })
+  await Category.create({
+    userId: user.id,
+    key: 'eng-blogs',
+    title: 'Engineering blogs',
+    min: 1,
+    max: 3,
+    poolSize: 6,
+    relevanceHint: 'Deep engineering writing.',
   })
   const edition = await Edition.create({
     userId: user.id,
@@ -136,13 +146,16 @@ test.group('EditionMailer', (group) => {
     )
     await edition.load('quizQuestions')
 
+    const categories = await Category.query().where('user_id', edition.userId).orderBy('id')
     const html = renderEditionEmail(
-      presentEdition(edition, edition.items, edition.quizQuestions),
+      presentEdition(edition, edition.items, edition.quizQuestions, categories),
       'https://app.example.com',
       'Tomiwa'
     )
 
     assert.include(html, 'A surfaced story')
+    // The reader's own category name titles the section.
+    assert.include(html, 'Engineering blogs')
     assert.include(html, 'Visit Newspaper')
     assert.include(html, 'href="https://app.example.com"')
     // The raw link is included as a copy-paste fallback if the button fails.
