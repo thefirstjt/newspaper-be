@@ -20,7 +20,7 @@ export default class UserSetting extends BaseModel {
   @column()
   declare quizMax: number
 
-  /** The time of day (24-hour "HH:mm") the reader's pipeline should run. */
+  /** The whole hour (24-hour "HH:00") the reader's pipeline should run. */
   @column()
   declare runTime: string
 

@@ -97,14 +97,14 @@ restarts.
 ### Daily scheduling
 
 Scheduling is a BullMQ repeatable job, not a separate process. When the worker
-starts it registers a tick that fires every minute on a dedicated `scheduler`
-queue; each tick queues a build for every active reader whose configured run
-time (`runTime` in their settings) has arrived and whose email frequency lands
-on the day. The build then runs on the `default` queue, so a slow build never
-delays the tick. The schedule is keyed in Redis, so restarting or running a
-second worker never double-registers it.
+starts it registers a tick that fires every hour on a dedicated `scheduler`
+queue; each tick queues a build for every active reader whose run hour
+(`runTime` in their settings, a whole hour like `21:00`) has arrived and whose
+email frequency lands on the day. The build then runs on the `default` queue, so
+a slow build never delays the tick. The schedule is keyed in Redis, so
+restarting or running a second worker never double-registers it.
 
-Run times are interpreted in the container's timezone, set by `TZ` (defaults to
+Run hours are interpreted in the container's timezone, set by `TZ` (defaults to
 `UTC` in the image). To (re)build editions by hand instead — for a backfill or a
 one-off — use the command directly:
 

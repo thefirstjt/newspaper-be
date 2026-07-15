@@ -6,9 +6,9 @@ import { dispatchDueBuilds } from '#services/edition/scheduler'
 type TickPayload = Record<string, never>
 
 /**
- * The scheduler tick. Registered as a repeatable job that fires every minute on
+ * The scheduler tick. Registered as a repeatable job that fires every hour on
  * the dedicated 'scheduler' queue, it queues a daily edition build for every
- * reader whose configured run time is now (and whose email frequency lands on
+ * reader whose configured run hour is now (and whose email frequency lands on
  * today). The builds themselves go onto the 'default' queue, so this stays a
  * quick query-and-dispatch that never competes with a running build.
  */

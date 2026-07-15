@@ -5,9 +5,11 @@ import vine from '@vinejs/vine'
  * field is optional, so a request can update just the ones it names.
  */
 export const scheduleValidator = vine.create({
+  // A whole hour, as "HH:00" — the daily build runs on the hour, so minutes are
+  // always zero.
   runTime: vine
     .string()
-    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .regex(/^([01]\d|2[0-3]):00$/)
     .optional(),
   emailEnabled: vine.boolean().optional(),
   emailFrequency: vine.enum(['daily', 'weekly', 'monthly']).optional(),

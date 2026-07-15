@@ -45,8 +45,9 @@ export default await Env.create(new URL('../', import.meta.url), {
   READER_CONTEXT_DIR: Env.schema.string.optional(),
 
   // Newspaper schedule
-  // The time of day (24-hour "HH:mm") at which the daily pipeline runs: it
-  // scouts the web, builds the edition and sends the email. Defaults to 9pm.
+  // The whole hour (24-hour "HH:00") at which a new reader's daily pipeline runs
+  // by default: it scouts the web, builds the edition and sends the email.
+  // Defaults to 9pm.
   NEWSPAPER_RUN_TIME: Env.schema.string.optional(),
   // Whether the daily edition is emailed. Turn this off to run in API-only mode
   // (for example when a frontend consumes the edition instead).

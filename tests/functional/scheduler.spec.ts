@@ -46,10 +46,10 @@ test.group('Scheduler', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  // A Monday, so weekly readers are on their send day; day 15, so monthly are not.
+  // A Monday, so weekly readers are on their send day; day 13, so monthly are not.
   const now = DateTime.fromISO('2026-07-13T09:00:00')
 
-  test('dispatches only readers whose run time is the current minute', async ({ assert }) => {
+  test('dispatches only readers whose run hour is the current hour', async ({ assert }) => {
     const due = await readerWithSettings({ runTime: '09:00' })
     await readerWithSettings({ runTime: '21:00' })
     const dispatcher = recordingDispatcher()
@@ -63,7 +63,18 @@ test.group('Scheduler', (group) => {
     assert.equal(dispatched[0].outcome, 'queued')
   })
 
-  test('skips deactivated readers even when their run time matches', async ({ assert }) => {
+  test('still dispatches when the hourly tick runs late within the hour', async ({ assert }) => {
+    const due = await readerWithSettings({ runTime: '09:00' })
+    const dispatcher = recordingDispatcher()
+
+    // The tick fired at 09:00 but ran at 09:45 — the reader is still due.
+    const dispatched = await dispatchDueBuilds(DateTime.fromISO('2026-07-13T09:45:00'), dispatcher)
+
+    assert.lengthOf(dispatched, 1)
+    assert.equal(dispatched[0].userId, due.id)
+  })
+
+  test('skips deactivated readers even when their run hour matches', async ({ assert }) => {
     await readerWithSettings({ runTime: '09:00', isActive: false })
     const dispatcher = recordingDispatcher()
 
