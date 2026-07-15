@@ -36,3 +36,12 @@ export const sourceDiscoverySchema = z.object({
     })
   ),
 })
+
+export const interestCategoriesSchema = z.object({
+  categories: z.array(
+    z.object({
+      title: z.string(),
+      description: z.string(),
+    })
+  ),
+})

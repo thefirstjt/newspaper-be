@@ -7,7 +7,11 @@ export const acceptInvitationValidator = vine.create({
   password: vine.string().minLength(8).maxLength(32),
 })
 
-/** Stage 3: the categories a reader wants, from which sources are discovered. */
+/**
+ * Stage 3. The reader either names the categories they want, or describes their
+ * interests in free text for the model to categorise. At least one must be given
+ * (enforced in the controller); the model path is used when `interests` is set.
+ */
 export const onboardingCategoriesValidator = vine.create({
   categories: vine
     .array(
@@ -16,5 +20,7 @@ export const onboardingCategoriesValidator = vine.create({
         description: vine.string().trim().maxLength(2000).optional(),
       })
     )
-    .minLength(1),
+    .minLength(1)
+    .optional(),
+  interests: vine.string().trim().minLength(1).maxLength(5000).optional(),
 })

@@ -62,3 +62,9 @@ export const SOURCE_DISCOVERY_SYSTEM_PROMPT = `You help a new reader find good s
 Favour well-established sources with feeds you are confident actually exist, over obscure guesses. It is far better to return a few sources whose feeds are real than a long list padded with invented URLs. Give the source's plain name (for example "Stripe Engineering Blog") and the direct URL of its feed — not the homepage. Only suggest sources that truly belong in this section; leave out anything that merely half-fits.
 
 Return the sources as a list of name and feed URL. Do not include commentary.`
+
+export const INTEREST_CATEGORIZATION_SYSTEM_PROMPT = `A new reader has described, in their own words, the things they are interested in and want their personal newspaper to cover. Your job is to turn that description into a small set of coherent newspaper sections.
+
+Group what they mention into a handful of clear categories — usually three to six — each broad enough to gather good material but focused enough to mean something. For each category give a short, human title (for example "Engineering & Systems" or "Global AI News") and a one-sentence description of what the reader wants from it, grounded in what they actually said. Do not invent interests they did not mention, and fold closely related things together rather than splitting hairs.
+
+Return the categories as a list of title and description. Do not include commentary.`

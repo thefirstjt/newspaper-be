@@ -6,6 +6,7 @@ import Source from '#models/source'
 import { seedAccountBasics } from '#services/onboarding/user_seeder'
 import { contextStoreFor } from '#services/context/context_store_manager'
 import { makeSourceDiscovery } from '#services/onboarding/source_discovery'
+import { makeInterestCategorization } from '#services/onboarding/interest_categorization'
 import { acceptInvitationValidator, onboardingCategoriesValidator } from '#validators/onboarding'
 import { presentCategory } from '#transformers/newspaper_presenter'
 import UserTransformer from '#transformers/user_transformer'
@@ -75,15 +76,29 @@ export default class OnboardingController {
   }
 
   /**
-   * Stage 3: the reader names the categories they want, and for each one the
-   * model suggests sources whose feeds we then verify, keeping only the ones
-   * that resolve. Returns the categories with their sources — the stage-4 view.
-   * This runs synchronously for now; a future version would queue the discovery
-   * per category and notify when it is ready.
+   * Stage 3: the reader either names the categories they want or describes their
+   * interests in free text (which the model turns into categories). For each
+   * category the model then suggests sources whose feeds we verify, keeping only
+   * the ones that resolve. Returns the categories with their sources — the
+   * stage-4 view. This runs synchronously for now; a future version would queue
+   * the discovery per category and notify when it is ready.
    */
-  async categories({ auth, request, serialize }: HttpContext) {
+  async categories({ auth, request, serialize, response }: HttpContext) {
     const user = auth.use('api').getUserOrFail()
-    const { categories } = await request.validateUsing(onboardingCategoriesValidator)
+    const { categories, interests } = await request.validateUsing(onboardingCategoriesValidator)
+
+    // Resolve the categories to build: the model turns free-text interests into
+    // them, otherwise the reader's own list is used.
+    let plan: { title: string; description?: string }[]
+    if (interests) {
+      plan = await makeInterestCategorization().categorize(interests)
+    } else if (categories) {
+      plan = categories
+    } else {
+      return response.unprocessableEntity({
+        error: 'Provide either a list of categories or your interests.',
+      })
+    }
 
     const persona = await contextStoreFor(user.id).read('persona')
     const discovery = makeSourceDiscovery()
@@ -91,7 +106,7 @@ export default class OnboardingController {
     const takenKeys = new Set(existing.map((category) => category.key))
 
     const created: Category[] = []
-    for (const input of categories) {
+    for (const input of plan) {
       const key = uniqueSlug(input.title, takenKeys)
       takenKeys.add(key)
 
