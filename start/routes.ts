@@ -73,6 +73,7 @@ router
             router.post('logout', [AdminSessionsController, 'destroy'])
             router.post('invitations', [AdminInvitationsController, 'store'])
             router.get('invitations', [AdminInvitationsController, 'index'])
+            router.post('invitations/:id/resend', [AdminInvitationsController, 'resend'])
             router.get('users', [AdminUsersController, 'index'])
             router.post('users/:id/toggle-status', [AdminUsersController, 'toggleStatus'])
             router.post('users/:id/send-edition', [AdminUsersController, 'sendEdition'])

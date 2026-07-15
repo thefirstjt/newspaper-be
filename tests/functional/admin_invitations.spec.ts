@@ -99,4 +99,51 @@ test.group('Admin invitations', (group) => {
       .loginAs(reader)
     response.assertStatus(401)
   })
+
+  test('resending re-issues a fresh token and expiry, and re-sends the email', async ({
+    client,
+    assert,
+  }) => {
+    const token = await adminToken(client)
+    const invitation = await Invitation.create({
+      email: 'resend@example.com',
+      token: 'old-token',
+      status: 'pending',
+      expiresAt: DateTime.now().plus({ days: 1 }),
+    })
+
+    const response = await client
+      .post(`/api/v1/admin/invitations/${invitation.id}/resend`)
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(200)
+
+    await invitation.refresh()
+    assert.notEqual(invitation.token, 'old-token')
+    assert.isTrue(invitation.expiresAt > DateTime.now().plus({ days: 2 }))
+    assert.lengthOf(sent, 1)
+    assert.equal(sent[0].to, 'resend@example.com')
+  })
+
+  test('an accepted invitation cannot be resent', async ({ client }) => {
+    const token = await adminToken(client)
+    const invitation = await Invitation.create({
+      email: 'done@example.com',
+      token: 'used-token',
+      status: 'accepted',
+      expiresAt: DateTime.now().plus({ days: 1 }),
+    })
+
+    const response = await client
+      .post(`/api/v1/admin/invitations/${invitation.id}/resend`)
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(422)
+  })
+
+  test('resending an unknown invitation returns 404', async ({ client }) => {
+    const token = await adminToken(client)
+    const response = await client
+      .post('/api/v1/admin/invitations/999/resend')
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(404)
+  })
 })

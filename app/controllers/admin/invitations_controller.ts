@@ -43,6 +43,33 @@ export default class AdminInvitationsController {
     })
   }
 
+  /** Re-issues an invitation with a fresh token and expiry, and re-sends its email. */
+  async resend({ auth, params, serialize, response }: HttpContext) {
+    const admin = auth.use('admin').getUserOrFail()
+
+    const invitation = await Invitation.find(params.id)
+    if (!invitation) {
+      return response.notFound({ error: `There is no invitation with id ${params.id}.` })
+    }
+    if (invitation.status === 'accepted') {
+      return response.unprocessableEntity({ error: 'This invitation has already been accepted.' })
+    }
+    if (await User.findBy('email', invitation.email)) {
+      return response.conflict({ error: 'An account for this email already exists.' })
+    }
+
+    invitation.merge({
+      token: Invitation.generateToken(),
+      expiresAt: DateTime.now().plus({ days: INVITATION_TTL_DAYS }),
+      invitedByAdminId: admin.id,
+    })
+    await invitation.save()
+
+    await new InvitationMailer().send(invitation.email, invitation.token)
+
+    return serialize(presentInvitation(invitation))
+  }
+
   /** Creates a fresh invitation, re-using a pending row for the email if one exists. */
   private async issueInvitation(email: string, adminId: number): Promise<Invitation> {
     const token = Invitation.generateToken()
