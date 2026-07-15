@@ -1,5 +1,7 @@
 import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
+import Edition from '#models/edition'
+import { editionMailerForUser } from '#services/email/edition_mailer'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -30,6 +32,29 @@ export default class AdminUsersController {
 
     return serialize(presentUser(user))
   }
+
+  /** Emails the reader their most recent edition on demand. */
+  async sendEdition({ params, serialize, response }: HttpContext) {
+    const user = await User.find(params.id)
+    if (!user) {
+      return response.notFound({ error: `There is no user with id ${params.id}.` })
+    }
+
+    const edition = await Edition.query().where('user_id', user.id).orderBy('date', 'desc').first()
+    if (!edition) {
+      return response.notFound({ error: 'This reader has no edition to send yet.' })
+    }
+
+    try {
+      await editionMailerForUser(user).deliver(edition)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      return response.status(502).send({ error: `Could not send the edition: ${message}` })
+    }
+
+    await user.refresh()
+    return serialize({ date: edition.date, user: presentUser(user) })
+  }
 }
 
 /** How a reader appears to an admin. */
@@ -40,6 +65,7 @@ function presentUser(user: User) {
     email: user.email,
     isActive: Boolean(user.isActive),
     lastLoggedInAt: user.lastLoggedInAt?.toISO() ?? null,
+    lastEditionSentAt: user.lastEditionSentAt?.toISO() ?? null,
     createdAt: user.createdAt.toISO(),
   }
 }

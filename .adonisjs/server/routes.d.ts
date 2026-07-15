@@ -17,6 +17,7 @@ export type ScannedRoutes = {
     'admin.admin_invitations.index': { paramsTuple?: []; params?: {} }
     'admin.admin_users.index': { paramsTuple?: []; params?: {} }
     'admin.admin_users.toggle_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.admin_users.send_edition': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.editions.today': { paramsTuple?: []; params?: {} }
     'newspaper.editions.show': { paramsTuple: [ParamValue]; params: {'date': ParamValue} }
     'newspaper.items.rate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -80,6 +81,7 @@ export type ScannedRoutes = {
     'admin.admin_sessions.destroy': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.store': { paramsTuple?: []; params?: {} }
     'admin.admin_users.toggle_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'admin.admin_users.send_edition': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.items.rate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.items.discard': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.quiz.answer': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

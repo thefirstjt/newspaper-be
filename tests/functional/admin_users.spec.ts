@@ -2,6 +2,15 @@ import { test } from '@japa/runner'
 import testUtils from '@adonisjs/core/services/test_utils'
 import Admin from '#models/admin'
 import User from '#models/user'
+import Edition from '#models/edition'
+import {
+  setEmailSenderFactory,
+  resetEmailSenderFactory,
+  type EmailMessage,
+} from '#services/email/email_sender'
+
+/** Captures sent emails instead of delivering them. */
+const sent: EmailMessage[] = []
 
 let counter = 0
 async function reader(overrides: Partial<{ isActive: boolean }> = {}) {
@@ -23,8 +32,19 @@ async function adminToken(client: import('@japa/api-client').ApiClient) {
 }
 
 test.group('Admin users', (group) => {
-  group.setup(() => testUtils.db().migrate())
-  group.each.setup(() => testUtils.db().truncate())
+  group.setup(async () => {
+    await testUtils.db().migrate()
+    setEmailSenderFactory(() => ({
+      async send(message) {
+        sent.push(message)
+      },
+    }))
+    return () => resetEmailSenderFactory()
+  })
+  group.each.setup(() => {
+    sent.length = 0
+    return testUtils.db().truncate()
+  })
 
   test('an admin lists the readers', async ({ client, assert }) => {
     await reader()
@@ -103,5 +123,37 @@ test.group('Admin users', (group) => {
     const user = await reader()
     const list = await client.get('/api/v1/admin/users').loginAs(user)
     list.assertStatus(401)
+  })
+
+  test('an admin sends a reader their latest edition and it stamps last-sent', async ({
+    client,
+    assert,
+  }) => {
+    const user = await reader()
+    await Edition.create({ userId: user.id, date: '2026-07-15', status: 'ready' })
+    const token = await adminToken(client)
+
+    const response = await client
+      .post(`/api/v1/admin/users/${user.id}/send-edition`)
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(200)
+    assert.equal(response.body().data.date, '2026-07-15')
+
+    assert.lengthOf(sent, 1)
+    assert.equal(sent[0].to, user.email)
+
+    await user.refresh()
+    assert.isNotNull(user.lastEditionSentAt)
+    assert.isNotNull(response.body().data.user.lastEditionSentAt)
+  })
+
+  test('sending an edition to a reader with none returns 404', async ({ client }) => {
+    const user = await reader()
+    const token = await adminToken(client)
+
+    const response = await client
+      .post(`/api/v1/admin/users/${user.id}/send-edition`)
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(404)
   })
 })

@@ -163,6 +163,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['toggleStatus']>>>
     }
   }
+  'admin.admin_users.send_edition': {
+    methods: ["POST"]
+    pattern: '/api/v1/admin/users/:id/send-edition'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['sendEdition']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['sendEdition']>>>
+    }
+  }
   'newspaper.editions.today': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/editions/today'
