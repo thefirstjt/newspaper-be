@@ -4,9 +4,11 @@ import env from '#start/env'
 
 const dbConfig = defineConfig({
   /**
-   * Default connection used for all queries.
+   * Default connection used for all queries. SQLite is the zero-setup default;
+   * set DB_CONNECTION=mysql (with the DB_* variables below) to run on MySQL,
+   * as the Docker/production setup does.
    */
-  connection: 'sqlite',
+  connection: env.get('DB_CONNECTION', 'sqlite'),
 
   connections: {
     /**
@@ -67,24 +69,35 @@ const dbConfig = defineConfig({
     // },
 
     /**
-     * MySQL / MariaDB connection.
-     * Install package to switch: npm install mysql2
+     * MySQL / MariaDB connection. Used in production (see the Docker setup);
+     * select it with DB_CONNECTION=mysql.
      */
-    // mysql: {
-    //   client: 'mysql2',
-    //   connection: {
-    //     host: env.get('DB_HOST'),
-    //     port: env.get('DB_PORT'),
-    //     user: env.get('DB_USER'),
-    //     password: env.get('DB_PASSWORD'),
-    //     database: env.get('DB_DATABASE'),
-    //   },
-    //   migrations: {
-    //     naturalSort: true,
-    //     paths: ['database/migrations'],
-    //   },
-    //   debug: app.inDev,
-    // },
+    mysql: {
+      client: 'mysql2',
+
+      connection: {
+        host: env.get('DB_HOST', '127.0.0.1'),
+        port: env.get('DB_PORT', 3306),
+        user: env.get('DB_USER', 'root'),
+        password: env.get('DB_PASSWORD', ''),
+        database: env.get('DB_DATABASE', 'newspaper'),
+      },
+
+      migrations: {
+        naturalSort: true,
+        paths: ['database/migrations'],
+      },
+
+      /**
+       * Hand-written models, so there is no generated schema file to keep in
+       * sync (matches the SQLite connection above).
+       */
+      schemaGeneration: {
+        enabled: false,
+      },
+
+      debug: app.inDev,
+    },
 
     /**
      * Microsoft SQL Server connection.

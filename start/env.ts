@@ -26,9 +26,18 @@ export default await Env.create(new URL('../', import.meta.url), {
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory', 'database'] as const),
 
   // Database
+  // Which connection to use: 'sqlite' (default, zero-setup) or 'mysql' (used in
+  // production / Docker). The DB_* variables below only apply to MySQL.
+  DB_CONNECTION: Env.schema.enum.optional(['sqlite', 'mysql'] as const),
   // Path to the SQLite file. Defaults to tmp/db.sqlite3; tests point this at a
   // separate file so they never touch real data.
   DB_FILENAME: Env.schema.string.optional(),
+  // MySQL connection details (only read when DB_CONNECTION=mysql).
+  DB_HOST: Env.schema.string.optional({ format: 'host' }),
+  DB_PORT: Env.schema.number.optional(),
+  DB_USER: Env.schema.string.optional(),
+  DB_PASSWORD: Env.schema.string.optional(),
+  DB_DATABASE: Env.schema.string.optional(),
 
   // Reader context
   // Directory holding the living markdown documents about the reader. Defaults
@@ -87,5 +96,5 @@ export default await Env.create(new URL('../', import.meta.url), {
   */
   QUEUE_REDIS_HOST: Env.schema.string({ format: 'host' }),
   QUEUE_REDIS_PORT: Env.schema.number(),
-  QUEUE_REDIS_PASSWORD: Env.schema.string.optional()
+  QUEUE_REDIS_PASSWORD: Env.schema.string.optional(),
 })

@@ -75,6 +75,7 @@
     "better-sqlite3": "^12.9.0",
     "ioredis": "^5.11.1",
     "luxon": "^3.7.2",
+    "mysql2": "^3.23.0",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.17.1",
     "rss-parser": "^3.13.0",
