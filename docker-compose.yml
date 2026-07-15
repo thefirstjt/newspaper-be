@@ -32,11 +32,15 @@ services:
       - '${DB_PORT:-3306}:3306'
     volumes:
       - mysql-data:/var/lib/mysql
+    # Ping over TCP so the check only passes once MySQL accepts network
+    # connections (the unix socket answers during first-boot init before the
+    # real server is up). start_period covers that initial init.
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-rootsecret}']
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 40s
     restart: unless-stopped
 
   redis:

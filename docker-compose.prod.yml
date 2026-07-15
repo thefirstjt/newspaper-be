@@ -31,11 +31,16 @@ services:
     # No host port published — MySQL is only reached over the compose network.
     volumes:
       - mysql-data:/var/lib/mysql
+    # Ping over TCP (127.0.0.1), not the unix socket, so the check only passes
+    # once the real networked server is up — during first-boot init MySQL answers
+    # on the socket well before it accepts TCP, which would let dependents start
+    # too early. start_period covers that initial init on a fresh volume.
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-rootsecret}']
+      test: ['CMD-SHELL', 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 40s
     restart: unless-stopped
 
   redis:
