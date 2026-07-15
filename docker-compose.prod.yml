@@ -1,17 +1,17 @@
-# A complete stack for the newspaper backend: the API, a queue worker, MySQL and
-# Redis. Copy .env.example to .env and set at least APP_KEY (generate one with
-# `node ace generate:key`) and APP_URL before running `docker compose up`.
+# Production stack for the droplet. Unlike docker-compose.yml (which builds the
+# image locally), this pulls a prebuilt image from GHCR — CI builds and pushes
+# it, and the droplet only runs it. Deploy is driven by .github/workflows/deploy.yml.
 #
-# DB_USER / DB_PASSWORD / DB_DATABASE are read from .env and shared between the
-# app and the MySQL service, so they always match.
+# Expects /opt/newspaper/.env with APP_KEY, APP_URL, the DB_* and QUEUE_REDIS_*
+# values, and the provider API keys. IMAGE_TAG is set per deploy by CI (falls
+# back to :latest).
 
 # Settings shared by every service that runs the app image.
 x-app: &app
-  build: .
-  image: newspaper-backend
+  image: ghcr.io/prismaticoder/newspaper-be:${IMAGE_TAG:-latest}
   env_file: .env
-  # These override whatever host/port are in .env so the containers reach the
-  # MySQL and Redis services on the compose network rather than 127.0.0.1.
+  # Point the app at the MySQL and Redis services on the compose network,
+  # regardless of what the .env says (its DB_HOST etc. are for the app container).
   environment: &app-env
     DB_CONNECTION: mysql
     DB_HOST: mysql
@@ -28,8 +28,7 @@ services:
       MYSQL_USER: ${DB_USER:-newspaper}
       MYSQL_PASSWORD: ${DB_PASSWORD:-newspaper}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
-    ports:
-      - '${DB_PORT:-3306}:3306'
+    # No host port published — MySQL is only reached over the compose network.
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -42,8 +41,7 @@ services:
   redis:
     image: redis:7-alpine
     command: ['redis-server', '--appendonly', 'yes']
-    ports:
-      - '${QUEUE_REDIS_PORT:-6379}:6379'
+    # No host port published — Redis is only reached over the compose network.
     volumes:
       - redis-data:/data
     healthcheck:
@@ -86,10 +84,9 @@ services:
       retries: 3
       start_period: 20s
 
-  # Drains the Redis-backed queues. It listens on both 'default' (the heavy
-  # edition builds and category generation) and 'scheduler' (the hourly tick
-  # that fires each reader's daily build at their configured time), so no
-  # separate scheduler process is needed. Without this worker those features
+  # Drains the Redis-backed queues — the heavy edition builds and category
+  # generation on 'default', and the hourly scheduler tick on 'scheduler'. No
+  # separate scheduler process is needed; without this worker those features
   # never run.
   worker:
     <<: *app
