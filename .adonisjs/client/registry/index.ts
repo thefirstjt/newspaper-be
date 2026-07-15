@@ -60,6 +60,12 @@ const routes = {
     tokens: [{"old":"/api/v1/admin/logout","type":0,"val":"api","end":""},{"old":"/api/v1/admin/logout","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/logout","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/logout","type":0,"val":"logout","end":""}],
     types: placeholder as Registry['admin.admin_sessions.destroy']['types'],
   },
+  'admin.admin_sessions.reset_password': {
+    methods: ["POST"],
+    pattern: '/api/v1/admin/reset-password',
+    tokens: [{"old":"/api/v1/admin/reset-password","type":0,"val":"api","end":""},{"old":"/api/v1/admin/reset-password","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/reset-password","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/reset-password","type":0,"val":"reset-password","end":""}],
+    types: placeholder as Registry['admin.admin_sessions.reset_password']['types'],
+  },
   'admin.admin_invitations.store': {
     methods: ["POST"],
     pattern: '/api/v1/admin/invitations',

@@ -50,4 +50,74 @@ test.group('Admin auth', (group) => {
     const me = await client.get('/api/v1/admin/me')
     me.assertStatus(401)
   })
+
+  async function tokenFor(client: import('@japa/api-client').ApiClient, password = 'supersecret') {
+    const login = await client.post('/api/v1/admin/login').json({ username: 'root', password })
+    return login.body().data.token as string
+  }
+
+  test('logging in stamps last-logged-in and returns it', async ({ client, assert }) => {
+    await makeAdmin()
+
+    const login = await client
+      .post('/api/v1/admin/login')
+      .json({ username: 'root', password: 'supersecret' })
+    login.assertStatus(200)
+    assert.isNotNull(login.body().data.admin.lastLoggedInAt)
+
+    const admin = await Admin.findByOrFail('username', 'root')
+    assert.isNotNull(admin.lastLoggedInAt)
+  })
+
+  test('an admin changes their own password', async ({ client }) => {
+    await makeAdmin()
+    const token = await tokenFor(client)
+
+    const reset = await client
+      .post('/api/v1/admin/reset-password')
+      .header('Authorization', `Bearer ${token}`)
+      .json({ currentPassword: 'supersecret', newPassword: 'brandnew1' })
+    reset.assertStatus(200)
+
+    // The old password no longer works; the new one does.
+    const oldLogin = await client
+      .post('/api/v1/admin/login')
+      .json({ username: 'root', password: 'supersecret' })
+    oldLogin.assertStatus(400)
+    const newLogin = await client
+      .post('/api/v1/admin/login')
+      .json({ username: 'root', password: 'brandnew1' })
+    newLogin.assertStatus(200)
+  })
+
+  test('resetting with the wrong current password is rejected', async ({ client }) => {
+    await makeAdmin()
+    const token = await tokenFor(client)
+
+    const reset = await client
+      .post('/api/v1/admin/reset-password')
+      .header('Authorization', `Bearer ${token}`)
+      .json({ currentPassword: 'wrong', newPassword: 'brandnew1' })
+    reset.assertStatus(422)
+  })
+
+  test('a new password that is too short or lacks a number is rejected', async ({ client }) => {
+    await makeAdmin()
+    const token = await tokenFor(client)
+
+    for (const newPassword of ['short1', 'nodigitshere']) {
+      const reset = await client
+        .post('/api/v1/admin/reset-password')
+        .header('Authorization', `Bearer ${token}`)
+        .json({ currentPassword: 'supersecret', newPassword })
+      reset.assertStatus(422)
+    }
+  })
+
+  test('resetting a password requires authentication', async ({ client }) => {
+    const reset = await client
+      .post('/api/v1/admin/reset-password')
+      .json({ currentPassword: 'supersecret', newPassword: 'brandnew1' })
+    reset.assertStatus(401)
+  })
 })

@@ -13,6 +13,7 @@ export type ScannedRoutes = {
     'admin.admin_sessions.store': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.me': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.destroy': { paramsTuple?: []; params?: {} }
+    'admin.admin_sessions.reset_password': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.store': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.index': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.resend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -85,6 +86,7 @@ export type ScannedRoutes = {
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.store': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.destroy': { paramsTuple?: []; params?: {} }
+    'admin.admin_sessions.reset_password': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.store': { paramsTuple?: []; params?: {} }
     'admin.admin_invitations.resend': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'admin.admin_users.toggle_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

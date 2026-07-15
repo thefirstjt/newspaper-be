@@ -27,6 +27,7 @@ export interface ApiDefinition {
       store: typeof routes['admin.admin_sessions.store']
       me: typeof routes['admin.admin_sessions.me']
       destroy: typeof routes['admin.admin_sessions.destroy']
+      resetPassword: typeof routes['admin.admin_sessions.reset_password']
     }
     adminInvitations: {
       store: typeof routes['admin.admin_invitations.store']

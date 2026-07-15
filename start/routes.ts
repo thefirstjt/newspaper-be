@@ -71,6 +71,7 @@ router
           .group(() => {
             router.get('me', [AdminSessionsController, 'me'])
             router.post('logout', [AdminSessionsController, 'destroy'])
+            router.post('reset-password', [AdminSessionsController, 'resetPassword'])
             router.post('invitations', [AdminInvitationsController, 'store'])
             router.get('invitations', [AdminInvitationsController, 'index'])
             router.post('invitations/:id/resend', [AdminInvitationsController, 'resend'])

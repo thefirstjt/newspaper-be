@@ -115,6 +115,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/sessions_controller').default['destroy']>>>
     }
   }
+  'admin.admin_sessions.reset_password': {
+    methods: ["POST"]
+    pattern: '/api/v1/admin/reset-password'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/admin').adminResetPasswordValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/admin').adminResetPasswordValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/sessions_controller').default['resetPassword']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/sessions_controller').default['resetPassword']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'admin.admin_invitations.store': {
     methods: ["POST"]
     pattern: '/api/v1/admin/invitations'

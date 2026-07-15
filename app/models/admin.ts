@@ -25,6 +25,9 @@ export default class Admin extends compose(
   @column({ serializeAs: null })
   declare password: string
 
+  @column.dateTime()
+  declare lastLoggedInAt: DateTime | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
