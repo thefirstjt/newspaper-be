@@ -13,7 +13,10 @@ export default class Admin extends compose(
   BaseModel,
   withAuthFinder(hash, { uids: ['username'], passwordColumnName: 'password' })
 ) {
-  static accessTokens = DbAccessTokensProvider.forModel(Admin, { table: 'admin_access_tokens' })
+  static accessTokens = DbAccessTokensProvider.forModel(Admin, {
+    table: 'admin_access_tokens',
+    expiresIn: '2 hours',
+  })
   declare currentAccessToken?: AccessToken
 
   @column({ isPrimary: true })

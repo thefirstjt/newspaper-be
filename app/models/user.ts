@@ -21,7 +21,7 @@ import UserSetting from '#models/user_setting'
 import XAccount from '#models/x_account'
 
 export default class User extends compose(BaseModel, withAuthFinder(hash)) {
-  static accessTokens = DbAccessTokensProvider.forModel(User)
+  static accessTokens = DbAccessTokensProvider.forModel(User, { expiresIn: '7 days' })
   declare currentAccessToken?: AccessToken
 
   // The id is a UUID assigned by the app (see assignId), not a DB auto-increment,
