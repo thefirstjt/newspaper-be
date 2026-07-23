@@ -40,7 +40,10 @@ new Ignitor(APP_ROOT, { importer: IMPORTER })
     app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
   })
   .ace()
-  .handle(process.argv.splice(2))
+  // Use slice, not splice: splice would mutate process.argv in place and strip
+  // the command name from it. Providers that inspect process.argv to learn which
+  // command is running (see providers/scheduler_provider.ts) need it left intact.
+  .handle(process.argv.slice(2))
   .catch((error) => {
     process.exitCode = 1
     prettyPrintError(error)

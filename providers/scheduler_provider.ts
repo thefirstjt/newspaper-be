@@ -15,6 +15,10 @@ export default class SchedulerProvider {
   constructor(protected app: ApplicationService) {}
 
   async ready() {
+    // We only want to register the tick inside the queue worker. The command is
+    // read from process.argv, which bin/console.ts deliberately leaves intact
+    // (it slices rather than splices) so the command name is still here by the
+    // time this ready hook runs.
     const isQueueWorker =
       this.app.getEnvironment() === 'console' && process.argv.includes('queue:listen')
     if (!isQueueWorker) return
