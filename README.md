@@ -85,7 +85,7 @@ restarts.
 | Service   | Command                          | Purpose                                                        |
 | --------- | -------------------------------- | -------------------------------------------------------------- |
 | `app`     | `node bin/server.js`             | The HTTP API.                                                  |
-| `worker`  | `node ace queue:listen`          | Drains the queues — edition builds, category generation, and the scheduler tick. |
+| `worker`  | `node ace scheduler:setup && node ace queue:listen` | Registers the hourly tick, then drains the queues — edition builds, category generation, and the scheduler tick. |
 | `migrate` | `node ace migration:run --force` | One-shot; runs on startup before the app services.             |
 | `mysql`   | —                                | Database.                                                      |
 | `redis`   | —                                | Job queue backend.                                             |
@@ -96,13 +96,15 @@ restarts.
 
 ### Daily scheduling
 
-Scheduling is a BullMQ repeatable job, not a separate process. When the worker
-starts it registers a tick that fires every hour on a dedicated `scheduler`
-queue; each tick queues a build for every active reader whose run hour
-(`runTime` in their settings, a whole hour like `21:00`) has arrived and whose
-email frequency lands on the day. The build then runs on the `default` queue, so
-a slow build never delays the tick. The schedule is keyed in Redis, so
-restarting or running a second worker never double-registers it.
+Scheduling is a BullMQ repeatable job, not a separate process. The
+`scheduler:setup` command registers a tick that fires every hour on a dedicated
+`scheduler` queue — the worker runs it before it starts draining, so the
+schedule is always in place. Each tick queues a build for every active reader
+whose run hour (`runTime` in their settings, a whole hour like `21:00`) has
+arrived and whose email frequency lands on the day. The build then runs on the
+`default` queue, so a slow build never delays the tick. The schedule is keyed in
+Redis, so re-running `scheduler:setup` (on a restart or redeploy) re-registers
+the same one rather than piling up duplicates.
 
 Run hours are interpreted in the container's timezone, set by `TZ` (defaults to
 `UTC` in the image). To (re)build editions by hand instead — for a backfill or a

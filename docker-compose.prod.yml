@@ -94,10 +94,11 @@ services:
   # Drains the Redis-backed queues — the heavy edition builds and category
   # generation on 'default', and the hourly scheduler tick on 'scheduler'. No
   # separate scheduler process is needed; without this worker those features
-  # never run.
+  # never run. It registers the hourly tick (scheduler:setup) before it starts
+  # listening, so the schedule is always in place.
   worker:
     <<: *app
-    command: ['node', 'ace', 'queue:listen']
+    command: ['sh', '-c', 'node ace scheduler:setup && node ace queue:listen']
     depends_on:
       mysql:
         condition: service_healthy

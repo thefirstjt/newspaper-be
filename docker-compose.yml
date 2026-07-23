@@ -94,10 +94,11 @@ services:
   # edition builds and category generation) and 'scheduler' (the hourly tick
   # that fires each reader's daily build at their configured time), so no
   # separate scheduler process is needed. Without this worker those features
-  # never run.
+  # never run. It registers the hourly tick (scheduler:setup) before it starts
+  # listening, so the schedule is always in place.
   worker:
     <<: *app
-    command: ['node', 'ace', 'queue:listen']
+    command: ['sh', '-c', 'node ace scheduler:setup && node ace queue:listen']
     depends_on:
       mysql:
         condition: service_healthy

@@ -57,7 +57,6 @@ export default defineConfig({
     () => import('#providers/api_provider'),
     () => import('@adonisjs/transmit/transmit_provider'),
     () => import('@rlanz/bull-queue/queue_provider'),
-    () => import('#providers/scheduler_provider'),
   ],
 
   /*
