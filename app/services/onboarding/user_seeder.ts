@@ -25,7 +25,7 @@ export async function seedAccountBasics(user: User, trx: TransactionClientContra
       quizMin: newspaperConfig.quiz.min,
       quizMax: newspaperConfig.quiz.max,
       runTime: newspaperConfig.schedule.runTime,
-      timezone: 'UTC',
+      timezone: 'Africa/Lagos',
       emailEnabled: newspaperConfig.schedule.emailEnabled,
       emailFrequency: 'daily',
     },
