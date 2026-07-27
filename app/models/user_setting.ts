@@ -24,6 +24,10 @@ export default class UserSetting extends BaseModel {
   @column()
   declare runTime: string
 
+  /** The reader's IANA timezone (e.g. 'Africa/Lagos') that runTime is expressed in. */
+  @column()
+  declare timezone: string
+
   @column()
   declare emailEnabled: boolean
 

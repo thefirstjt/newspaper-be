@@ -23,6 +23,7 @@ export default class ConfigController {
 
     settings.merge({
       runTime: changes.runTime ?? settings.runTime,
+      timezone: changes.timezone ?? settings.timezone,
       emailEnabled: changes.emailEnabled ?? settings.emailEnabled,
       emailFrequency: changes.emailFrequency ?? settings.emailFrequency,
     })
@@ -61,6 +62,7 @@ export default class ConfigController {
 function presentSchedule(settings: UserSetting) {
   return {
     runTime: settings.runTime,
+    timezone: settings.timezone,
     emailEnabled: settings.emailEnabled,
     emailFrequency: settings.emailFrequency,
   }

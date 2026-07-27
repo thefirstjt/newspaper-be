@@ -9,6 +9,7 @@ import type { DailyRunDispatcher, DispatchOutcome } from '#services/edition/dail
 let counter = 0
 async function readerWithSettings(settings: {
   runTime: string
+  timezone?: string
   emailFrequency?: string
   isActive?: boolean
 }) {
@@ -24,6 +25,7 @@ async function readerWithSettings(settings: {
     quizMin: 1,
     quizMax: 3,
     runTime: settings.runTime,
+    timezone: settings.timezone ?? 'UTC',
     emailEnabled: true,
     emailFrequency: settings.emailFrequency ?? 'daily',
   })
@@ -46,8 +48,9 @@ test.group('Scheduler', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  // A Monday, so weekly readers are on their send day; day 13, so monthly are not.
-  const now = DateTime.fromISO('2026-07-13T09:00:00')
+  // A Monday, so weekly readers are on their send day; day 13, so monthly are
+  // not. Pinned to UTC so timezone conversions in the tests are deterministic.
+  const now = DateTime.fromISO('2026-07-13T09:00:00', { zone: 'utc' })
 
   test('dispatches only readers whose run hour is the current hour', async ({ assert }) => {
     const due = await readerWithSettings({ runTime: '09:00' })
@@ -68,10 +71,49 @@ test.group('Scheduler', (group) => {
     const dispatcher = recordingDispatcher()
 
     // The tick fired at 09:00 but ran at 09:45 — the reader is still due.
-    const dispatched = await dispatchDueBuilds(DateTime.fromISO('2026-07-13T09:45:00'), dispatcher)
+    const dispatched = await dispatchDueBuilds(
+      DateTime.fromISO('2026-07-13T09:45:00', { zone: 'utc' }),
+      dispatcher
+    )
 
     assert.lengthOf(dispatched, 1)
     assert.equal(dispatched[0].userId, due.id)
+  })
+
+  test("matches a reader's run hour in their own timezone", async ({ assert }) => {
+    // Lagos is UTC+1, so their 09:00 arrives when it is 08:00 UTC.
+    const lagos = await readerWithSettings({ runTime: '09:00', timezone: 'Africa/Lagos' })
+    const dispatcher = recordingDispatcher()
+
+    const early = await dispatchDueBuilds(
+      DateTime.fromISO('2026-07-13T08:00:00', { zone: 'utc' }),
+      dispatcher
+    )
+    assert.lengthOf(early, 1)
+    assert.equal(early[0].userId, lagos.id)
+
+    // At 09:00 UTC it is already 10:00 in Lagos, so they are no longer due.
+    const later = await dispatchDueBuilds(
+      DateTime.fromISO('2026-07-13T09:00:00', { zone: 'utc' }),
+      recordingDispatcher()
+    )
+    assert.lengthOf(later, 0)
+  })
+
+  test('dates the build to the reader’s local day, not the server’s', async ({ assert }) => {
+    // Kiritimati is UTC+14: at 10:00 UTC on the 13th it is already 00:00 on the
+    // 14th there, so a midnight reader is due and their edition is dated the 14th.
+    const reader = await readerWithSettings({ runTime: '00:00', timezone: 'Pacific/Kiritimati' })
+    const dispatcher = recordingDispatcher()
+
+    const dispatched = await dispatchDueBuilds(
+      DateTime.fromISO('2026-07-13T10:00:00', { zone: 'utc' }),
+      dispatcher
+    )
+
+    assert.lengthOf(dispatched, 1)
+    assert.equal(dispatcher.calls[0].userId, reader.id)
+    assert.equal(dispatcher.calls[0].date, '2026-07-14')
   })
 
   test('skips deactivated readers even when their run hour matches', async ({ assert }) => {

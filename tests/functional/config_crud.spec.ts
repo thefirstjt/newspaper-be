@@ -3,6 +3,7 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import User from '#models/user'
 import Category from '#models/category'
 import Source from '#models/source'
+import UserSetting from '#models/user_setting'
 
 let counter = 0
 async function reader() {
@@ -131,6 +132,53 @@ test.group('Config CRUD — sources', (group) => {
         settings: { feedUrl: 'https://example.com/feed' },
       })
       .loginAs(bob)
+    response.assertStatus(422)
+  })
+})
+
+test.group('Config CRUD — schedule', (group) => {
+  group.setup(() => testUtils.db().migrate())
+  group.each.setup(() => testUtils.db().truncate())
+
+  async function readerWithSchedule() {
+    const user = await reader()
+    await UserSetting.create({
+      userId: user.id,
+      quizMin: 1,
+      quizMax: 3,
+      runTime: '21:00',
+      timezone: 'UTC',
+      emailEnabled: true,
+      emailFrequency: 'daily',
+    })
+    return user
+  }
+
+  test('updates the run time, timezone and frequency', async ({ client, assert }) => {
+    const user = await readerWithSchedule()
+
+    const response = await client
+      .put('/api/v1/config/schedule')
+      .json({ runTime: '09:00', timezone: 'Africa/Lagos', emailFrequency: 'weekly' })
+      .loginAs(user)
+
+    response.assertStatus(200)
+    assert.equal(response.body().data.runTime, '09:00')
+    assert.equal(response.body().data.timezone, 'Africa/Lagos')
+    assert.equal(response.body().data.emailFrequency, 'weekly')
+
+    const settings = await UserSetting.findByOrFail('user_id', user.id)
+    assert.equal(settings.timezone, 'Africa/Lagos')
+  })
+
+  test('rejects an invalid timezone', async ({ client }) => {
+    const user = await readerWithSchedule()
+
+    const response = await client
+      .put('/api/v1/config/schedule')
+      .json({ timezone: 'Not/AZone' })
+      .loginAs(user)
+
     response.assertStatus(422)
   })
 })

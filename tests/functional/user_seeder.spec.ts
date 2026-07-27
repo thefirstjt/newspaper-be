@@ -38,6 +38,7 @@ test.group('seedAccountBasics', (group) => {
     const settings = await UserSetting.findBy('user_id', user.id)
     assert.isNotNull(settings)
     assert.equal(settings!.emailFrequency, 'daily')
+    assert.equal(settings!.timezone, 'UTC')
 
     const documents = await ReaderDocument.query().where('user_id', user.id)
     assert.lengthOf(documents, 3)
