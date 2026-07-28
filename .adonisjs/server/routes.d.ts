@@ -8,6 +8,7 @@ export type ScannedRoutes = {
     'onboarding.onboarding.invitation': { paramsTuple?: []; params?: {} }
     'onboarding.onboarding.accept': { paramsTuple?: []; params?: {} }
     'onboarding.onboarding.categories': { paramsTuple?: []; params?: {} }
+    'onboarding.onboarding.step': { paramsTuple?: []; params?: {} }
     'profile.profile.show': { paramsTuple?: []; params?: {} }
     'profile.access_tokens.destroy': { paramsTuple?: []; params?: {} }
     'admin.admin_sessions.store': { paramsTuple?: []; params?: {} }
@@ -103,6 +104,7 @@ export type ScannedRoutes = {
     'unsubscribe': { paramsTuple?: []; params?: {} }
   }
   PUT: {
+    'onboarding.onboarding.step': { paramsTuple?: []; params?: {} }
     'newspaper.persona.update': { paramsTuple?: []; params?: {} }
     'newspaper.categories.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'newspaper.sources.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }

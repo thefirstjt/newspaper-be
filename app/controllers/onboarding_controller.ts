@@ -6,7 +6,13 @@ import {
   categoriesChannelFor,
   makeCategoryGenerationDispatcher,
 } from '#services/onboarding/category_generation'
-import { acceptInvitationValidator, onboardingCategoriesValidator } from '#validators/onboarding'
+import { DateTime } from 'luxon'
+import {
+  acceptInvitationValidator,
+  onboardingCategoriesValidator,
+  onboardingStepValidator,
+  INITIAL_ONBOARDING_STEP,
+} from '#validators/onboarding'
 import UserTransformer from '#transformers/user_transformer'
 import type { HttpContext } from '@adonisjs/core/http'
 
@@ -47,7 +53,13 @@ export default class OnboardingController {
 
     const user = await db.transaction(async (trx) => {
       const created = new User()
-      created.fill({ name, email: invitation.email, password, isActive: true })
+      created.fill({
+        name,
+        email: invitation.email,
+        password,
+        isActive: true,
+        onboardingStep: INITIAL_ONBOARDING_STEP,
+      })
       created.useTransaction(trx)
       await created.save()
 
@@ -88,5 +100,33 @@ export default class OnboardingController {
     await makeCategoryGenerationDispatcher().dispatch(user.id, { categories, interests })
 
     return response.accepted({ data: { channel: categoriesChannelFor(user.id) } })
+  }
+
+  /**
+   * Records how far the reader has got in onboarding. The frontend reports the
+   * screen they have moved to as they go, or 'completed' after the last one —
+   * which clears the step and stamps the completion time. The updated reader is
+   * returned so the caller sees the new step straight away.
+   */
+  async step({ auth, request, serialize }: HttpContext) {
+    const user = auth.use('api').getUserOrFail()
+    const { step } = await request.validateUsing(onboardingStepValidator)
+
+    // Onboarding is a one-time flow. Once it is finished (step already cleared),
+    // reporting progress does nothing rather than dropping a settled reader back
+    // into onboarding — we just hand back their current, completed state.
+    if (user.onboardingStep === null) {
+      return serialize(UserTransformer.transform(user))
+    }
+
+    if (step === 'completed') {
+      user.onboardingStep = null
+      user.onboardingCompletedAt = user.onboardingCompletedAt ?? DateTime.now()
+    } else {
+      user.onboardingStep = step
+    }
+    await user.save()
+
+    return serialize(UserTransformer.transform(user))
   }
 }
