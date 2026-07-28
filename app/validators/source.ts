@@ -4,6 +4,9 @@ import vine from '@vinejs/vine'
 const settings = () =>
   vine.object({
     feedUrl: vine.string().trim().url().optional(),
+    // For youtube sources the reader supplies a channel url; the controller
+    // resolves it to the channelId the fetcher reads.
+    channelUrl: vine.string().trim().url().optional(),
     channelId: vine.string().trim().maxLength(200).optional(),
     query: vine.string().trim().maxLength(500).optional(),
     username: vine.string().trim().maxLength(100).optional(),

@@ -15,7 +15,9 @@ export interface SourceConfig {
   settings: {
     /** RSS/Atom feed url, for `rss` sources. */
     feedUrl?: string
-    /** YouTube channel id, for `youtube` sources. */
+    /** The channel url the reader entered, for `youtube` sources. */
+    channelUrl?: string
+    /** YouTube channel id resolved from the channel url, for `youtube` sources. */
     channelId?: string
     /** A topic or query hint that guides the search, for `websearch` sources. */
     query?: string

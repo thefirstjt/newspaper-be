@@ -134,6 +134,46 @@ test.group('Config CRUD — sources', (group) => {
       .loginAs(bob)
     response.assertStatus(422)
   })
+
+  test('resolves a youtube source from a /channel/ url on create', async ({ client, assert }) => {
+    const user = await reader()
+    const category = await categoryFor(user)
+
+    const created = await client
+      .post('/api/v1/config/sources')
+      .json({
+        categoryId: category.id,
+        type: 'youtube',
+        name: 'Veritasium',
+        settings: { channelUrl: 'https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA' },
+      })
+      .loginAs(user)
+
+    created.assertStatus(200)
+    const source = await Source.firstOrFail()
+    assert.equal(source.settings.channelId, 'UCHnyfMqiRRG1u-2MsSQLbXA')
+    assert.equal(
+      source.settings.channelUrl,
+      'https://www.youtube.com/channel/UCHnyfMqiRRG1u-2MsSQLbXA'
+    )
+  })
+
+  test('rejects a youtube source whose channel url cannot be resolved', async ({ client }) => {
+    const user = await reader()
+    const category = await categoryFor(user)
+
+    const response = await client
+      .post('/api/v1/config/sources')
+      .json({
+        categoryId: category.id,
+        type: 'youtube',
+        name: 'Bad channel',
+        settings: { channelUrl: 'https://www.youtube.com/c/SomeLegacyName' },
+      })
+      .loginAs(user)
+
+    response.assertStatus(422)
+  })
 })
 
 test.group('Config CRUD — schedule', (group) => {

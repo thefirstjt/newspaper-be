@@ -2,6 +2,11 @@ import Source from '#models/source'
 import Category from '#models/category'
 import { presentSource } from '#transformers/newspaper_presenter'
 import { createSourceValidator, updateSourceValidator } from '#validators/source'
+import {
+  makeYoutubeChannelResolver,
+  YoutubeChannelResolutionError,
+} from '#services/scout/youtube_channel_resolver'
+import type { SourceConfig } from '#config/newspaper'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -23,12 +28,24 @@ export default class SourcesController {
       return response.unprocessableEntity({ error: 'That category does not exist.' })
     }
 
+    let settings = data.settings
+    if (data.type === 'youtube') {
+      try {
+        settings = await this.withResolvedYoutubeChannel(settings)
+      } catch (error) {
+        if (error instanceof YoutubeChannelResolutionError) {
+          return response.unprocessableEntity({ error: error.message })
+        }
+        throw error
+      }
+    }
+
     const source = await Source.create({
       userId: user.id,
       categoryId: data.categoryId,
       type: data.type,
       name: data.name,
-      settings: data.settings,
+      settings,
       enabled: data.enabled ?? true,
     })
     return serialize(presentSource(source))
@@ -46,6 +63,19 @@ export default class SourcesController {
       return response.unprocessableEntity({ error: 'That category does not exist.' })
     }
 
+    // Re-resolve the channel id whenever a youtube source is given a new channel url.
+    const effectiveType = data.type ?? source.type
+    if (effectiveType === 'youtube' && data.settings?.channelUrl) {
+      try {
+        data.settings = await this.withResolvedYoutubeChannel(data.settings)
+      } catch (error) {
+        if (error instanceof YoutubeChannelResolutionError) {
+          return response.unprocessableEntity({ error: error.message })
+        }
+        throw error
+      }
+    }
+
     source.merge(data)
     await source.save()
     return serialize(presentSource(source))
@@ -60,6 +90,18 @@ export default class SourcesController {
 
     await source.delete()
     return response.noContent()
+  }
+
+  /**
+   * Resolves a youtube source's channel url to its channel id and returns the
+   * settings with that id filled in. Throws YoutubeChannelResolutionError (which
+   * the callers turn into a 422) when the url can't be resolved.
+   */
+  private async withResolvedYoutubeChannel(
+    settings: SourceConfig['settings']
+  ): Promise<SourceConfig['settings']> {
+    const channelId = await makeYoutubeChannelResolver().resolve(settings.channelUrl ?? '')
+    return { ...settings, channelId }
   }
 
   /** Whether the category exists and belongs to the reader. */
