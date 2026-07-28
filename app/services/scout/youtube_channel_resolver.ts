@@ -126,7 +126,7 @@ function parseChannelUrl(raw: string): ParsedChannel | null {
 
   // https://www.youtube.com/channel/UC… — the id is right there on the path.
   if (segments[0] === 'channel' && segments[1]) {
-    return isChannelId(segments[1]) ? { kind: 'channelId', channelId: segments[1] } : null
+    return isYoutubeChannelId(segments[1]) ? { kind: 'channelId', channelId: segments[1] } : null
   }
 
   // https://www.youtube.com/@handle
@@ -138,7 +138,7 @@ function parseChannelUrl(raw: string): ParsedChannel | null {
 }
 
 /** A YouTube channel id is "UC" followed by 22 url-safe characters. */
-function isChannelId(value: string): boolean {
+export function isYoutubeChannelId(value: string): boolean {
   return /^UC[\w-]{22}$/.test(value)
 }
 
