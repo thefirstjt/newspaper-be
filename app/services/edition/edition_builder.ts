@@ -105,6 +105,7 @@ export class EditionBuilder {
           title: candidate.title,
           snippet: candidate.snippet,
           sourceName: candidate.sourceName,
+          userAdded: candidate.userAdded,
         })),
       })
 
@@ -282,7 +283,12 @@ export async function loadCategories(userId: string): Promise<CategoryConfig[]> 
     relevanceHint: category.relevanceHint,
     sources: category.sources
       .filter((source) => source.enabled)
-      .map((source) => ({ type: source.type, name: source.name, settings: source.settings })),
+      .map((source) => ({
+        type: source.type,
+        name: source.name,
+        settings: source.settings,
+        userAdded: source.userAdded,
+      })),
   }))
 }
 

@@ -24,6 +24,8 @@ export interface RawCandidate {
 export interface ScoutedCandidate extends RawCandidate {
   categoryKey: string
   urlHash: string
+  /** True when the source this came from was added by the reader themselves. */
+  userAdded: boolean
 }
 
 /** A source the scout could not read, kept so a run can report what it missed. */

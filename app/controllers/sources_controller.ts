@@ -47,6 +47,8 @@ export default class SourcesController {
       name: data.name,
       settings,
       enabled: data.enabled ?? true,
+      // The reader is adding this one by hand, so mark it so ranking prefers it.
+      userAdded: true,
     })
     return serialize(presentSource(source))
   }

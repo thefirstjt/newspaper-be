@@ -118,6 +118,24 @@ test.group('Config CRUD — sources', (group) => {
     assert.lengthOf(await Source.all(), 0)
   })
 
+  test('marks a source the reader adds as user-added', async ({ client, assert }) => {
+    const user = await reader()
+    const category = await categoryFor(user)
+
+    await client
+      .post('/api/v1/config/sources')
+      .json({
+        categoryId: category.id,
+        type: 'rss',
+        name: 'My Blog',
+        settings: { feedUrl: 'https://example.com/feed' },
+      })
+      .loginAs(user)
+
+    const source = await Source.firstOrFail()
+    assert.isTrue(Boolean(source.userAdded))
+  })
+
   test('rejects a source pointing at a category the reader does not own', async ({ client }) => {
     const alice = await reader()
     const category = await categoryFor(alice)
