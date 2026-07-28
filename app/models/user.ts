@@ -43,6 +43,14 @@ export default class User extends compose(BaseModel, withAuthFinder(hash)) {
   @column()
   declare isActive: boolean
 
+  /** The onboarding screen the reader still needs to complete; null once done. */
+  @column()
+  declare onboardingStep: string | null
+
+  /** When the reader finished onboarding; null while still in progress. */
+  @column.dateTime()
+  declare onboardingCompletedAt: DateTime | null
+
   @column.dateTime()
   declare lastLoggedInAt: DateTime | null
 

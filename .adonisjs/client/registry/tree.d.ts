@@ -12,6 +12,7 @@ export interface ApiDefinition {
       invitation: typeof routes['onboarding.onboarding.invitation']
       accept: typeof routes['onboarding.onboarding.accept']
       categories: typeof routes['onboarding.onboarding.categories']
+      step: typeof routes['onboarding.onboarding.step']
     }
   }
   profile: {

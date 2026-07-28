@@ -30,6 +30,12 @@ const routes = {
     tokens: [{"old":"/api/v1/onboarding/categories","type":0,"val":"api","end":""},{"old":"/api/v1/onboarding/categories","type":0,"val":"v1","end":""},{"old":"/api/v1/onboarding/categories","type":0,"val":"onboarding","end":""},{"old":"/api/v1/onboarding/categories","type":0,"val":"categories","end":""}],
     types: placeholder as Registry['onboarding.onboarding.categories']['types'],
   },
+  'onboarding.onboarding.step': {
+    methods: ["PUT"],
+    pattern: '/api/v1/onboarding/step',
+    tokens: [{"old":"/api/v1/onboarding/step","type":0,"val":"api","end":""},{"old":"/api/v1/onboarding/step","type":0,"val":"v1","end":""},{"old":"/api/v1/onboarding/step","type":0,"val":"onboarding","end":""},{"old":"/api/v1/onboarding/step","type":0,"val":"step","end":""}],
+    types: placeholder as Registry['onboarding.onboarding.step']['types'],
+  },
   'profile.profile.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/account/profile',

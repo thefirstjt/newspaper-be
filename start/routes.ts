@@ -48,6 +48,7 @@ router
         router
           .group(() => {
             router.post('categories', [OnboardingController, 'categories'])
+            router.put('step', [OnboardingController, 'step'])
           })
           .use(middleware.auth())
       })

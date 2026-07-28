@@ -55,6 +55,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/onboarding_controller').default['categories']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'onboarding.onboarding.step': {
+    methods: ["PUT"]
+    pattern: '/api/v1/onboarding/step'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/onboarding').onboardingStepValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/onboarding').onboardingStepValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/onboarding_controller').default['step']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/onboarding_controller').default['step']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'profile.profile.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/account/profile'
