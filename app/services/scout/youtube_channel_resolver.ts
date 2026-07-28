@@ -1,4 +1,5 @@
 import env from '#start/env'
+import logger from '@adonisjs/core/services/logger'
 import YoutubeChannel from '#models/youtube_channel'
 
 const CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels'
@@ -7,9 +8,11 @@ const CHANNELS_ENDPOINT = 'https://www.googleapis.com/youtube/v3/channels'
 const REQUEST_TIMEOUT_MS = 10_000
 
 /**
- * Raised when a channel url cannot be turned into a channel id — a malformed
- * url, an unsupported shape, a handle with no matching channel, or a handle that
- * needs the API when no key is configured. The message is safe to show a reader.
+ * Raised only for problems the reader can fix by giving a better url: a malformed
+ * or unsupported url, or a url that points at no channel. Its message is safe to
+ * show them. Server-side problems — no API key, a failing YouTube API — are thrown
+ * as ordinary errors instead, so they surface as a 500 and are logged rather than
+ * leaking API specifics to the reader.
  */
 export class YoutubeChannelResolutionError extends Error {}
 
@@ -52,9 +55,10 @@ export class YoutubeChannelResolver {
     }
 
     if (!this.apiKey) {
-      throw new YoutubeChannelResolutionError(
-        `Resolving @${handle} needs a configured YouTube API key. Paste the channel's /channel/UC… url instead, or set YOUTUBE_API_KEY.`
-      )
+      // A missing key is a server misconfiguration, not something the reader did
+      // or can fix, so this surfaces as a 500 rather than a validation error.
+      logger.error('Cannot resolve a YouTube handle: YOUTUBE_API_KEY is not configured.')
+      throw new Error('YOUTUBE_API_KEY is not configured.')
     }
 
     const channelId = await this.fetchChannelIdForHandle(handle)
@@ -74,15 +78,23 @@ export class YoutubeChannelResolver {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     })
     if (!response.ok) {
-      throw new YoutubeChannelResolutionError(
-        `YouTube could not be reached to resolve @${handle} (status ${response.status}).`
+      // The YouTube API itself failed (bad key, quota, malformed request). That
+      // is our problem, not the reader's, so log the detail for us and let it
+      // surface as a 500 instead of leaking API specifics to the reader.
+      const detail = await response.text().catch(() => '')
+      logger.error(
+        { handle, status: response.status, body: detail },
+        'YouTube channels request failed'
       )
+      throw new Error(`YouTube channels request failed with status ${response.status}.`)
     }
 
     const body = (await response.json()) as { items?: Array<{ id?: string }> }
     const channelId = body.items?.[0]?.id
     if (!channelId) {
-      throw new YoutubeChannelResolutionError(`No YouTube channel was found for @${handle}.`)
+      // A well-formed request that found nothing means the reader's url points at
+      // no channel — that one is on them, so it stays a friendly 422.
+      throw new YoutubeChannelResolutionError('We could not find a YouTube channel for that url.')
     }
     return channelId
   }
