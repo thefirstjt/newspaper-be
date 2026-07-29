@@ -28,7 +28,11 @@ services:
       MYSQL_USER: ${DB_USER:-newspaper}
       MYSQL_PASSWORD: ${DB_PASSWORD:-newspaper}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
-    # No host port published — MySQL is only reached over the compose network.
+    # Published on the droplet's loopback only (not the public internet), so it
+    # can be reached from the host — and, through an SSH tunnel, by a local DB
+    # client like TablePlus. The compose network still reaches it as "mysql".
+    ports:
+      - '127.0.0.1:3306:3306'
     volumes:
       - mysql-data:/var/lib/mysql
     # Ping over TCP (127.0.0.1), not the unix socket, so the check only passes
