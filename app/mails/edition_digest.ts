@@ -90,7 +90,7 @@ function renderGreeting(recipientName: string, summary: string | null): string {
     return `<p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">Hi ${escapeHtml(recipientName)}, here's your news for today:</p>`
   }
   return `
-      <p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">Top of the day to you ${escapeHtml(recipientName)}!</p>
+      <p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">Hey ${escapeHtml(recipientName)},</p>
       <p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">${escapeHtml(truncate(summary, SUMMARY_MAX_LENGTH))}</p>`
 }
 
