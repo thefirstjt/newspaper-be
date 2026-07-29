@@ -139,6 +139,26 @@ test.group('EditionMailer', (group) => {
     )
   })
 
+  test('greets the reader, then the day summary as its own paragraph', async ({ assert }) => {
+    const edition = await editionWithContent('2026-06-21')
+    edition.summary = 'Today the world argued about AI regulation.'
+    await edition.save()
+    const sender = recordingSender()
+
+    await new EditionMailer({
+      recipient: 'reader@example.com',
+      appUrl: 'https://app.example.com',
+      fromAddress: 'newspaper@percussionlabs.ai',
+      recipientName: 'Tomiwa',
+      sender,
+    }).deliver(edition)
+
+    const html = sender.sent[0].html
+    assert.include(html, 'Top of the day to you Tomiwa!')
+    assert.include(html, 'Today the world argued about AI regulation.')
+    assert.notInclude(html, "here's your news for today")
+  })
+
   test('fails clearly when no recipient is configured', async ({ assert }) => {
     const edition = await editionWithContent('2026-06-21')
     const sender = recordingSender()

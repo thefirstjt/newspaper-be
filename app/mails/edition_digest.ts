@@ -20,6 +20,10 @@ const LAVENDER_LINE = '#EDE7FB'
 const PAGE_BG = '#F1F1F1'
 const BODY_TEXT = '#4A4560'
 const MUTED_TEXT = '#9B93B5'
+const BLACK = '#111111'
+
+/** The day's summary is trimmed to this many characters (on a word boundary). */
+const SUMMARY_MAX_LENGTH = 220
 
 const HEAD_FONT = "'Lora', Georgia, 'Times New Roman', serif"
 const BODY_FONT =
@@ -71,14 +75,32 @@ function renderMasthead(edition: EditionView): string {
       <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(formatDate(edition.date))}</h1>`
   }
 
-  const summary = edition.summary
-    ? `<p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${DEEP_PURPLE};">${escapeHtml(edition.summary)}</p>`
-    : ''
-
   return `
       <p style="margin:0;font-family:${BODY_FONT};font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:${PURPLE};">See Newspaper &middot; ${escapeHtml(formatDate(edition.date))}</p>
-      <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(edition.headline)}</h1>
-      ${summary}`
+      <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(edition.headline)}</h1>`
+}
+
+/**
+ * The greeting line under the masthead: "Hey <name>, <the day's summary>" in
+ * black, with the summary lower-cased so it reads as one sentence and trimmed to
+ * a set length. Falls back to a plain greeting for an edition with no summary.
+ */
+function renderGreeting(recipientName: string, summary: string | null): string {
+  if (!summary) {
+    return `<p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">Hi ${escapeHtml(recipientName)}, here's your news for today:</p>`
+  }
+  return `
+      <p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">Top of the day to you ${escapeHtml(recipientName)}!</p>
+      <p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${BLACK};">${escapeHtml(truncate(summary, SUMMARY_MAX_LENGTH))}</p>`
+}
+
+/** Trims text to at most `max` characters on a word boundary, adding an ellipsis. */
+function truncate(text: string, max: number): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= max) {
+    return trimmed
+  }
+  return `${trimmed.slice(0, max).replace(/\s+\S*$/, '')}…`
 }
 
 /** Builds the email's HTML from the day's edition. */
@@ -90,6 +112,7 @@ export function renderEditionEmail(
   const sections = edition.categories.map((category) => renderCategory(category)).join('')
   const year = edition.date.slice(0, 4)
   const masthead = renderMasthead(edition)
+  const greeting = renderGreeting(recipientName, edition.summary)
 
   return `<!doctype html>
 <html lang="en">
@@ -123,7 +146,7 @@ export function renderEditionEmail(
           </tr>
           <tr>
             <td class="px" style="padding:22px 40px 0;">
-              <p style="margin:0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${DEEP_PURPLE};">Hi ${escapeHtml(recipientName)}, here's your news for today:</p>
+              ${greeting}
             </td>
           </tr>
           <tr>
