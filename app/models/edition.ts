@@ -20,6 +20,14 @@ export default class Edition extends BaseModel {
   @column()
   declare status: string
 
+  /** The edition's front-page headline, synthesised from the day's stories. */
+  @column()
+  declare headline: string | null
+
+  /** A one-paragraph summary of the day, synthesised from the day's stories. */
+  @column()
+  declare summary: string | null
+
   @column()
   declare keyLearning: string | null
 

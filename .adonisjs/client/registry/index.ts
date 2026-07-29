@@ -120,6 +120,12 @@ const routes = {
     tokens: [{"old":"/api/v1/editions/:date","type":0,"val":"api","end":""},{"old":"/api/v1/editions/:date","type":0,"val":"v1","end":""},{"old":"/api/v1/editions/:date","type":0,"val":"editions","end":""},{"old":"/api/v1/editions/:date","type":1,"val":"date","end":""}],
     types: placeholder as Registry['newspaper.editions.show']['types'],
   },
+  'newspaper.items.search': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/items/search',
+    tokens: [{"old":"/api/v1/items/search","type":0,"val":"api","end":""},{"old":"/api/v1/items/search","type":0,"val":"v1","end":""},{"old":"/api/v1/items/search","type":0,"val":"items","end":""},{"old":"/api/v1/items/search","type":0,"val":"search","end":""}],
+    types: placeholder as Registry['newspaper.items.search']['types'],
+  },
   'newspaper.items.rate': {
     methods: ["POST"],
     pattern: '/api/v1/items/:id/rate',

@@ -135,6 +135,23 @@ test.group('HeadlineManager.writeQuiz', () => {
   })
 })
 
+test.group('HeadlineManager.writeEditionHeadline', () => {
+  test('runs on the generation model and returns the headline and summary', async ({ assert }) => {
+    const { manager, tasks } = managerReturning(
+      '{"headline": "A Big Day", "summary": "Plenty happened today."}'
+    )
+
+    const front = await manager.writeEditionHeadline({
+      stories: [{ title: 'A story', section: 'Engineering', blurb: 'about a thing' }],
+      readerContext,
+    })
+
+    assert.deepEqual(tasks, [AgentTask.GENERATION])
+    assert.equal(front.headline, 'A Big Day')
+    assert.equal(front.summary, 'Plenty happened today.')
+  })
+})
+
 test.group('HeadlineManager.writeKeyLearning', () => {
   test('runs on the generation model and returns plain text', async ({ assert }) => {
     const { manager, calls, tasks } = managerReturning('An insight about replication.')

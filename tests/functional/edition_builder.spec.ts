@@ -63,7 +63,11 @@ function scoutReturning(candidates: ScoutedCandidate[]) {
   return { scout: async (): Promise<ScoutResult> => ({ candidates, failures: [] }) }
 }
 
-/** Canned key learning and quiz so the builder has something to persist. */
+/** Canned front page, key learning and quiz so the builder has something to persist. */
+const writeEditionHeadline = async () => ({
+  headline: 'A Big Day in Distributed Systems',
+  summary: 'A short summary of the day.',
+})
 const writeKeyLearning = async () => 'Today you learned about distributed systems.'
 const writeQuiz = async (input: { count: number }): Promise<QuizQuestionDraft[]> =>
   Array.from({ length: input.count }, (_, index) => ({
@@ -85,6 +89,7 @@ const headlines = {
       .map((entry) => ({ id: entry.id, score: entry.id, reason: 'because' }))
       .sort((a, b) => b.score - a.score),
   summarizeArticle: async (input: { title: string }) => `Summary: ${input.title}`,
+  writeEditionHeadline,
   writeKeyLearning,
   writeQuiz,
 }
@@ -127,6 +132,9 @@ test.group('EditionBuilder', (group) => {
     assert.equal(edition.status, 'ready')
     assert.equal(edition.date, '2026-05-27')
     assert.equal(edition.userId, user.id)
+    // The front page is synthesised from the day's stories.
+    assert.equal(edition.headline, 'A Big Day in Distributed Systems')
+    assert.equal(edition.summary, 'A short summary of the day.')
 
     const engItems = await Item.query()
       .where('edition_id', edition.id)
@@ -208,6 +216,7 @@ test.group('EditionBuilder', (group) => {
         { id: 1, score: 0.5, reason: 'ok' },
       ],
       summarizeArticle: async (input: { title: string }) => `Summary: ${input.title}`,
+      writeEditionHeadline,
       writeKeyLearning,
       writeQuiz,
     }
@@ -239,6 +248,7 @@ test.group('EditionBuilder', (group) => {
       summarizeArticle: async () => {
         throw new Error('model is down')
       },
+      writeEditionHeadline,
       writeKeyLearning,
       writeQuiz,
     }

@@ -63,7 +63,9 @@ export class EditionMailer {
     await this.sender.send({
       from: `${FROM_NAME} <${this.fromAddress}>`,
       to: this.recipient,
-      subject: editionSubject(edition.date),
+      // The day's headline makes the best subject; fall back to a generic one
+      // when an edition has none (e.g. an empty day).
+      subject: edition.headline ?? editionSubject(edition.date),
       html: renderEditionEmail(view, this.appUrl, this.recipientName),
     })
 

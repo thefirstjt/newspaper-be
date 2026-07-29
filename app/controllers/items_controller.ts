@@ -13,6 +13,31 @@ import type { HttpContext } from '@adonisjs/core/http'
  * back around in a future edition.
  */
 export default class ItemsController {
+  /**
+   * Searches the reader's past items by title, so they can find a story from an
+   * earlier edition. Matching is case-insensitive and partial; results are the
+   * reader's own items only, newest first, each carrying its edition's date.
+   */
+  async search({ auth, request, serialize }: HttpContext) {
+    const user = auth.use('api').getUserOrFail()
+    const query = String(request.input('q') ?? '').trim()
+    if (query.length === 0) {
+      return serialize({ items: [] })
+    }
+
+    const items = await Item.query()
+      .where('user_id', user.id)
+      .whereRaw('LOWER(title) LIKE ?', [`%${query.toLowerCase()}%`])
+      .preload('edition')
+      .preload('rating')
+      .orderBy('created_at', 'desc')
+      .limit(50)
+
+    return serialize({
+      items: items.map((item) => ({ ...presentItem(item), date: item.edition.date })),
+    })
+  }
+
   /** Records a 1–5 rating (with an optional note) for the reader's item. */
   async rate({ auth, params, request, serialize, response }: HttpContext) {
     const user = auth.use('api').getUserOrFail()

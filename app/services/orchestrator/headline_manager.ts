@@ -1,6 +1,6 @@
 import { generateText, Output } from 'ai'
 import { modelFor } from '#services/orchestrator/models'
-import { rankingSchema, quizSchema } from '#services/orchestrator/schemas'
+import { rankingSchema, quizSchema, editionHeadlineSchema } from '#services/orchestrator/schemas'
 import {
   buildMessageUsingContext,
   assertNotEmpty,
@@ -11,9 +11,12 @@ import {
   QUIZ_SYSTEM_PROMPT,
   RANKING_SYSTEM_PROMPT,
   SUMMARY_SYSTEM_PROMPT,
+  EDITION_HEADLINE_SYSTEM_PROMPT,
 } from '#services/orchestrator/prompts'
 import { AgentTask } from '#services/orchestrator/types'
 import type {
+  EditionHeadline,
+  EditionHeadlineInput,
   KeyLearningInput,
   ModelResolver,
   QuizInput,
@@ -87,6 +90,27 @@ export class HeadlineManager {
   }
 
   /** Writes the one-or-two paragraph key learning of the day. */
+  /**
+   * Writes the edition's front-page headline and a one-paragraph summary of the
+   * day from the stories it surfaced, so the reader gets a masthead when they
+   * open the paper (and the email gets a real subject line).
+   */
+  async writeEditionHeadline(input: EditionHeadlineInput): Promise<EditionHeadline> {
+    const userMessage = ["Today's stories:", '', JSON.stringify(input.stories, null, 2)].join('\n')
+
+    const { output } = await generateText({
+      model: this.getModelFor(AgentTask.GENERATION),
+      system: EDITION_HEADLINE_SYSTEM_PROMPT,
+      messages: buildMessageUsingContext(input.readerContext, userMessage),
+      output: Output.object({ schema: editionHeadlineSchema }),
+    })
+
+    return {
+      headline: assertNotEmpty(output.headline),
+      summary: assertNotEmpty(output.summary),
+    }
+  }
+
   async writeKeyLearning(input: KeyLearningInput): Promise<string> {
     const userMessage = `The reader's learning-gap topics:\n${bulletList(input.gapTopics)}`
 

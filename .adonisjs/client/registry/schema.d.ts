@@ -235,6 +235,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/editions_controller').default['show']>>>
     }
   }
+  'newspaper.items.search': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/items/search'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/items_controller').default['search']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/items_controller').default['search']>>>
+    }
+  }
   'newspaper.items.rate': {
     methods: ["POST"]
     pattern: '/api/v1/items/:id/rate'

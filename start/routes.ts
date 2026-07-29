@@ -91,6 +91,7 @@ router
       .group(() => {
         router.get('editions/today', [EditionsController, 'today'])
         router.get('editions/:date', [EditionsController, 'show'])
+        router.get('items/search', [ItemsController, 'search'])
         router.post('items/:id/rate', [ItemsController, 'rate'])
         router.post('items/:id/discard', [ItemsController, 'discard'])
         router.get('quiz/score', [QuizController, 'score'])
