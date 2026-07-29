@@ -30,20 +30,25 @@ function discovererReturning(responseText: string) {
 }
 
 test.group('SourceDiscoverer.discover', () => {
-  test('runs on the generation model and returns the proposed sources', async ({ assert }) => {
+  test('runs on the generation model and returns the proposed feeds and channels', async ({
+    assert,
+  }) => {
     const { discoverer, calls, tasks } = discovererReturning(
-      '{"sources": [{"name": "Stripe Engineering", "feedUrl": "https://stripe.com/blog/feed.rss"}]}'
+      '{"feeds": [{"name": "Stripe Engineering", "feedUrl": "https://stripe.com/blog/feed.rss"}], "channels": [{"name": "Veritasium", "channelUrl": "https://www.youtube.com/@veritasium"}]}'
     )
 
-    const sources = await discoverer.discover({
+    const result = await discoverer.discover({
       categoryTitle: 'Engineering Blogs',
       relevanceHint: 'Deep engineering writing.',
       persona: 'A senior engineer.',
     })
 
     assert.deepEqual(tasks, [AgentTask.GENERATION])
-    assert.deepEqual(sources, [
+    assert.deepEqual(result.feeds, [
       { name: 'Stripe Engineering', feedUrl: 'https://stripe.com/blog/feed.rss' },
+    ])
+    assert.deepEqual(result.channels, [
+      { name: 'Veritasium', channelUrl: 'https://www.youtube.com/@veritasium' },
     ])
 
     // The category and persona are described to the model.

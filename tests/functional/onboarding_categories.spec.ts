@@ -15,7 +15,7 @@ import {
   resetCategoryGenerationDispatcher,
 } from '#services/onboarding/category_generation'
 import type { CategoryGenerationInput } from '#services/onboarding/category_generation'
-import type { DiscoveredSource } from '#services/orchestrator/source_discoverer'
+import type { VerifiedSource } from '#services/onboarding/source_discovery'
 import type { CategoryPlan } from '#services/orchestrator/interest_categorizer'
 
 let counter = 0
@@ -29,7 +29,7 @@ async function reader() {
 }
 
 /** Stubs source discovery to return the given sources for every category. */
-function discoveryReturning(sources: DiscoveredSource[]) {
+function discoveryReturning(sources: VerifiedSource[]) {
   setSourceDiscovery(() => ({
     async discoverVerified() {
       return sources
@@ -110,7 +110,11 @@ test.group('Category generation (queued work)', (group) => {
 
   test('creates categories with unique slugs and their verified sources', async ({ assert }) => {
     discoveryReturning([
-      { name: 'Stripe Engineering', feedUrl: 'https://stripe.com/blog/feed.rss' },
+      {
+        type: 'rss',
+        name: 'Stripe Engineering',
+        settings: { feedUrl: 'https://stripe.com/blog/feed.rss' },
+      },
     ])
     const user = await reader()
 
@@ -134,6 +138,30 @@ test.group('Category generation (queued work)', (group) => {
     assert.deepEqual(sources[0].settings, { feedUrl: 'https://stripe.com/blog/feed.rss' })
   })
 
+  test('creates a discovered youtube channel as a youtube source', async ({ assert }) => {
+    discoveryReturning([
+      {
+        type: 'youtube',
+        name: 'Veritasium',
+        settings: {
+          channelUrl: 'https://www.youtube.com/@veritasium',
+          channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA',
+        },
+      },
+    ])
+    const user = await reader()
+
+    await generateCategoriesAndSources(user, { categories: [{ title: 'Science' }] })
+
+    const sources = await Source.query().where('user_id', user.id)
+    assert.lengthOf(sources, 1)
+    assert.equal(sources[0].type, 'youtube')
+    assert.deepEqual(sources[0].settings, {
+      channelUrl: 'https://www.youtube.com/@veritasium',
+      channelId: 'UCHnyfMqiRRG1u-2MsSQLbXA',
+    })
+  })
+
   test('a category whose feeds all fail verification is created with no sources', async ({
     assert,
   }) => {
@@ -155,7 +183,11 @@ test.group('Category generation (queued work)', (group) => {
       { title: 'Global AI News', description: 'How the world talks about AI.' },
     ])
     discoveryReturning([
-      { name: 'Stripe Engineering', feedUrl: 'https://stripe.com/blog/feed.rss' },
+      {
+        type: 'rss',
+        name: 'Stripe Engineering',
+        settings: { feedUrl: 'https://stripe.com/blog/feed.rss' },
+      },
     ])
     const user = await reader()
 

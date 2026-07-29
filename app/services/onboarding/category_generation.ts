@@ -1,6 +1,6 @@
 import Category from '#models/category'
 import Source from '#models/source'
-import User from '#models/user'
+import type User from '#models/user'
 import { contextStoreFor } from '#services/context/context_store_manager'
 import { makeSourceDiscovery } from '#services/onboarding/source_discovery'
 import { makeInterestCategorization } from '#services/onboarding/interest_categorization'
@@ -76,9 +76,9 @@ export async function generateCategoriesAndSources(
       await Source.create({
         userId: user.id,
         categoryId: category.id,
-        type: 'rss',
+        type: source.type,
         name: source.name,
-        settings: { feedUrl: source.feedUrl },
+        settings: source.settings,
         enabled: true,
       })
     }

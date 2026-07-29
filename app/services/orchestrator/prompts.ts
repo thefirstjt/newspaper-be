@@ -69,11 +69,14 @@ Write a persona of a few short paragraphs, in plain prose, that describes: who t
 
 Return only the persona document, as markdown, with no preamble or heading.`
 
-export const SOURCE_DISCOVERY_SYSTEM_PROMPT = `You help a new reader find good sources for one section of their personal newspaper. Given the section's title and a short description of what they want from it — and, where provided, a picture of who the reader is — suggest a handful of reputable blogs, publications, and news outlets that genuinely fit, along with the address of each one's RSS or Atom feed.
+export const SOURCE_DISCOVERY_SYSTEM_PROMPT = `You help a new reader find good sources for one section of their personal newspaper. Given the section's title and a short description of what they want from it — and, where provided, a picture of who the reader is — suggest sources that genuinely fit. There are two kinds:
 
-Favour well-established sources with feeds you are confident actually exist, over obscure guesses. It is far better to return a few sources whose feeds are real than a long list padded with invented URLs. Give the source's plain name (for example "Stripe Engineering Blog") and the direct URL of its feed — not the homepage. Only suggest sources that truly belong in this section; leave out anything that merely half-fits.
+- Feeds: reputable blogs, publications, and news outlets, each with the direct address of its RSS or Atom feed (the feed URL itself, not the homepage).
+- YouTube channels: well-known channels that fit the section, each with the full URL of the channel — either its handle page (for example https://www.youtube.com/@Veritasium) or its /channel/ address.
 
-Return the sources as a list of name and feed URL. Do not include commentary.`
+Favour well-established sources you are confident actually exist, over obscure guesses. It is far better to return a few real ones than a long list padded with invented feeds or channels. Give each source its plain name (for example "Stripe Engineering Blog" or "Veritasium"). Only suggest things that truly belong in this section; leave out anything that merely half-fits. If a section has no fitting feeds, or no fitting channels, return an empty list for that kind.
+
+Do not include commentary.`
 
 export const INTEREST_CATEGORIZATION_SYSTEM_PROMPT = `A new reader has described, in their own words, the things they are interested in and want their personal newspaper to cover. Your job is to turn that description into a small set of coherent newspaper sections.
 

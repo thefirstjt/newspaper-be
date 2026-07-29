@@ -16,17 +16,29 @@ export interface DiscoverSourcesInput {
   limit?: number
 }
 
-/** A source the model proposes for a category, before its feed is verified. */
-export interface DiscoveredSource {
+/** A feed-backed source the model proposes, before its feed is verified. */
+export interface DiscoveredFeed {
   name: string
   feedUrl: string
 }
 
+/** A YouTube channel the model proposes, before it is resolved. */
+export interface DiscoveredChannel {
+  name: string
+  channelUrl: string
+}
+
+/** What the model proposes for a category: feeds and channels, both unverified. */
+export interface DiscoveryResult {
+  feeds: DiscoveredFeed[]
+  channels: DiscoveredChannel[]
+}
+
 /**
- * Asks the model to suggest good sources (with RSS feed urls) for a category,
- * optionally tailored to the reader. The suggestions still need verifying — the
- * model can propose feeds that do not resolve — so callers should check each
- * feed before trusting it.
+ * Asks the model to suggest good sources for a category — RSS/Atom feeds and
+ * YouTube channels — optionally tailored to the reader. The suggestions still
+ * need verifying (the model can propose feeds that do not resolve or channels
+ * that do not exist), so callers should check each one before trusting it.
  *
  * The model resolver is injectable so tests can supply a mock in place of a real
  * provider.
@@ -34,7 +46,7 @@ export interface DiscoveredSource {
 export class SourceDiscoverer {
   constructor(private getModelFor: ModelResolver = modelFor) {}
 
-  async discover(input: DiscoverSourcesInput): Promise<DiscoveredSource[]> {
+  async discover(input: DiscoverSourcesInput): Promise<DiscoveryResult> {
     const userMessage = [
       `Section: ${input.categoryTitle}`,
       '',
@@ -51,6 +63,6 @@ export class SourceDiscoverer {
       output: Output.object({ schema: sourceDiscoverySchema }),
     })
 
-    return output.sources
+    return { feeds: output.feeds, channels: output.channels }
   }
 }
