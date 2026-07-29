@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import Edition from '#models/edition'
+import RebuildLog from '#models/rebuild_log'
 import { editionMailerForUser } from '#services/email/edition_mailer'
 import { editionChannelFor, makeDailyRunDispatcher } from '#services/edition/daily_run'
 import type { HttpContext } from '@adonisjs/core/http'
@@ -83,6 +84,9 @@ export default class AdminUsersController {
         data: { channel },
       })
     }
+
+    // Record the rebuild now that one has actually been queued.
+    await RebuildLog.create({ userId: user.id, triggeredByAdmin: true })
 
     return response.accepted({ data: { date, channel } })
   }

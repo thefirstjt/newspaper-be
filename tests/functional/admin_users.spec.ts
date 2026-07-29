@@ -4,6 +4,7 @@ import testUtils from '@adonisjs/core/services/test_utils'
 import Admin from '#models/admin'
 import User from '#models/user'
 import Edition from '#models/edition'
+import RebuildLog from '#models/rebuild_log'
 import {
   setEmailSenderFactory,
   resetEmailSenderFactory,
@@ -189,6 +190,27 @@ test.group('Admin users', (group) => {
     assert.equal(dispatched[0].userId, user.id)
     assert.equal(dispatched[0].date, DateTime.now().toISODate())
     assert.lengthOf(sent, 0)
+    // The rebuild is recorded, marked admin-triggered.
+    const logs = await RebuildLog.query().where('user_id', user.id)
+    assert.lengthOf(logs, 1)
+    assert.isTrue(Boolean(logs[0].triggeredByAdmin))
+  })
+
+  test('an already-running rebuild is not logged', async ({ client, assert }) => {
+    const user = await reader()
+    const token = await adminToken(client)
+    setDailyRunDispatcher(() => ({
+      async dispatch(): Promise<DispatchOutcome> {
+        return 'already-running'
+      },
+    }))
+
+    const response = await client
+      .post(`/api/v1/admin/users/${user.id}/rebuild-edition`)
+      .header('Authorization', `Bearer ${token}`)
+
+    response.assertStatus(409)
+    assert.lengthOf(await RebuildLog.all(), 0)
   })
 
   test('an admin rebuilds a specific date when one is given', async ({ client, assert }) => {
