@@ -35,6 +35,10 @@ export default class Source extends BaseModel {
   @column()
   declare enabled: boolean
 
+  /** True when the reader added this source themselves (vs a default or discovered one). */
+  @column()
+  declare userAdded: boolean
+
   @column.dateTime()
   declare lastFetchedAt: DateTime | null
 

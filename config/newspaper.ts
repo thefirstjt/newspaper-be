@@ -12,6 +12,8 @@ export type SourceType = 'rss' | 'youtube' | 'websearch' | 'x'
 export interface SourceConfig {
   type: SourceType
   name: string
+  /** True when the reader added this source themselves; absent for default sources. */
+  userAdded?: boolean
   settings: {
     /** RSS/Atom feed url, for `rss` sources. */
     feedUrl?: string

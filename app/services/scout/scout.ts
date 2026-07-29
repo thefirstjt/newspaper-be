@@ -42,7 +42,7 @@ export class Scout {
         try {
           const candidates = await fetcher.fetch(source)
           for (const candidate of candidates) {
-            gathered.push(toScoutedCandidate(candidate, category.key))
+            gathered.push(toScoutedCandidate(candidate, category.key, source.userAdded ?? false))
           }
         } catch (error) {
           failures.push({ sourceName: source.name, message: messageOf(error) })
@@ -81,9 +81,13 @@ export function createScout(userId: string): Scout {
   return new Scout(fetchers, new SeenUrlStore(userId))
 }
 
-function toScoutedCandidate(candidate: RawCandidate, categoryKey: string): ScoutedCandidate {
+function toScoutedCandidate(
+  candidate: RawCandidate,
+  categoryKey: string,
+  userAdded: boolean
+): ScoutedCandidate {
   const url = canonicalizeUrl(candidate.url)
-  return { ...candidate, url, urlHash: hashUrl(url), categoryKey }
+  return { ...candidate, url, urlHash: hashUrl(url), categoryKey, userAdded }
 }
 
 function dedupeByHash(candidates: ScoutedCandidate[]): ScoutedCandidate[] {

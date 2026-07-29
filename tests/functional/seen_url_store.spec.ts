@@ -13,6 +13,7 @@ function candidate(url: string): ScoutedCandidate {
     title: 'Title',
     snippet: 'Snippet',
     sourceName: 'Source',
+    userAdded: false,
     author: null,
     publishedAt: null,
     mediaType: 'article',

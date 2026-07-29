@@ -38,6 +38,8 @@ export interface RankCandidate {
   title: string
   snippet: string
   sourceName: string
+  /** True when it came from a source the reader added themselves; ranking prefers these. */
+  userAdded: boolean
 }
 
 export interface RankCandidatesInput {

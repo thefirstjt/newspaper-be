@@ -60,6 +60,26 @@ test.group('Scout', () => {
     assert.equal(duplicate?.categoryKey, 'cat-a')
   })
 
+  test('carries the source user-added flag onto its candidates', async ({ assert }) => {
+    const categories = [
+      category('cat-a', [
+        { type: 'rss', name: 'Mine', userAdded: true, settings: { feedUrl: 'f1' } },
+        { type: 'rss', name: 'Default', settings: { feedUrl: 'f2' } },
+      ]),
+    ]
+    const fetchers = {
+      rss: fetcherFrom({ Mine: ['https://mine.com/1'], Default: ['https://default.com/1'] }),
+    }
+
+    const { candidates } = await new Scout(fetchers, passThroughGate).scout(categories)
+
+    const mine = candidates.find((candidate) => candidate.url === 'https://mine.com/1')
+    const other = candidates.find((candidate) => candidate.url === 'https://default.com/1')
+    assert.isTrue(mine?.userAdded)
+    // A source with no userAdded flag defaults to false.
+    assert.isFalse(other?.userAdded)
+  })
+
   test('skips source types that have no fetcher without recording a failure', async ({
     assert,
   }) => {

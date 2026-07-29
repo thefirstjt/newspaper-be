@@ -32,6 +32,8 @@ You will be given a description of what makes an item relevant to this section, 
 3. Rank the survivors best first and return no more than the number you are asked for.
 4. Leave weak or ill-fitting candidates out entirely rather than padding the list to reach the number.
 
+Some candidates come from sources the reader added themselves; these are marked with \`userAdded: true\`. Treat that as a thumb on the scale in their favour. When a reader has gone out of their way to add a source, they are telling you they trust and want it, so prefer its items over comparable ones from the default sources, and let a user-added item win a close call. This is a preference, not a rule: if an item from another source is clearly more curious, insightful, or important, that item should still win. Quality leads; the reader's own sources tip the balance when things are otherwise close.
+
 For each item you return, give its original id, a score from 0 to 1 for how well it fits (be honest — a thin field should produce low scores, not inflated ones), and a brief reason grounded in the philosophy above.
 
 ## Remember

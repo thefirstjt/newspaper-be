@@ -52,6 +52,7 @@ function candidate(categoryKey: string, title: string): ScoutedCandidate {
     title,
     snippet: `Snippet for ${title}`,
     sourceName: 'Source',
+    userAdded: false,
     author: null,
     publishedAt: null,
     mediaType: 'article',
