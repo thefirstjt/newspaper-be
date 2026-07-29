@@ -51,9 +51,17 @@ export async function generateCategoriesAndSources(
   const discovery = makeSourceDiscovery()
   const existing = await Category.query().where('user_id', user.id)
   const takenKeys = new Set(existing.map((category) => category.key))
+  const takenTitles = new Set(existing.map((category) => normalizeTitle(category.title)))
 
   const created: Category[] = []
   for (const item of plan) {
+    // Skip a category the reader already has by title, so a retried job or a
+    // repeated title in the plan fills in what is missing rather than creating a
+    // second, same-named category.
+    const title = normalizeTitle(item.title)
+    if (takenTitles.has(title)) continue
+    takenTitles.add(title)
+
     const key = uniqueSlug(item.title, takenKeys)
     takenKeys.add(key)
 
@@ -123,6 +131,11 @@ export function resetCategoryGenerationDispatcher(): void {
 }
 
 /** Turns a title into a slug unique among the reader's category keys. */
+/** A title normalised for comparison, so casing and stray spacing don't matter. */
+function normalizeTitle(title: string): string {
+  return title.trim().toLowerCase()
+}
+
 function uniqueSlug(title: string, taken: Set<string>): string {
   const base =
     title

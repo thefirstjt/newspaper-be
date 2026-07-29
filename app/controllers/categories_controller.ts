@@ -31,6 +31,16 @@ export default class CategoriesController {
       })
     }
 
+    const titleClash = await Category.query()
+      .where('user_id', user.id)
+      .whereRaw('LOWER(title) = ?', [data.title.trim().toLowerCase()])
+      .first()
+    if (titleClash) {
+      return response.unprocessableEntity({
+        error: `You already have a category named "${data.title}".`,
+      })
+    }
+
     const category = await Category.create({ userId: user.id, ...data })
     await category.load('sources')
     return serialize(presentCategory(category))
@@ -44,6 +54,20 @@ export default class CategoriesController {
     }
 
     const data = await request.validateUsing(updateCategoryValidator)
+
+    if (data.title !== undefined) {
+      const titleClash = await Category.query()
+        .where('user_id', user.id)
+        .whereNot('id', category.id)
+        .whereRaw('LOWER(title) = ?', [data.title.trim().toLowerCase()])
+        .first()
+      if (titleClash) {
+        return response.unprocessableEntity({
+          error: `You already have a category named "${data.title}".`,
+        })
+      }
+    }
+
     category.merge(data)
     if (category.max < category.min) {
       return response.unprocessableEntity({ error: 'max must be greater than or equal to min.' })

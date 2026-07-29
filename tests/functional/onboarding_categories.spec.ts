@@ -108,7 +108,7 @@ test.group('Category generation (queued work)', (group) => {
     resetInterestCategorization()
   })
 
-  test('creates categories with unique slugs and their verified sources', async ({ assert }) => {
+  test('creates one category per distinct title with its verified sources', async ({ assert }) => {
     discoveryReturning([
       {
         type: 'rss',
@@ -119,6 +119,7 @@ test.group('Category generation (queued work)', (group) => {
     const user = await reader()
 
     await generateCategoriesAndSources(user, {
+      // The second "AI News" is a duplicate title and is skipped.
       categories: [
         { title: 'AI News', description: 'How the world talks about AI.' },
         { title: 'AI News' },
@@ -128,12 +129,11 @@ test.group('Category generation (queued work)', (group) => {
     const categories = await Category.query().where('user_id', user.id).orderBy('id')
     assert.deepEqual(
       categories.map((category) => category.key),
-      ['ai-news', 'ai-news-2']
+      ['ai-news']
     )
 
     const sources = await Source.query().where('user_id', user.id)
-    // One discovered source per category.
-    assert.lengthOf(sources, 2)
+    assert.lengthOf(sources, 1)
     assert.equal(sources[0].type, 'rss')
     assert.deepEqual(sources[0].settings, { feedUrl: 'https://stripe.com/blog/feed.rss' })
   })
@@ -187,6 +187,32 @@ test.group('Category generation (queued work)', (group) => {
     assert.deepEqual(
       sources.map((source) => source.type),
       ['rss', 'youtube']
+    )
+  })
+
+  test('skips a category whose title the reader already has', async ({ assert }) => {
+    discoveryReturning([])
+    const user = await reader()
+    // A category from an earlier (e.g. retried) run.
+    await Category.create({
+      userId: user.id,
+      key: 'global-affairs',
+      title: 'Global Affairs',
+      min: 1,
+      max: 2,
+      poolSize: 6,
+      relevanceHint: 'World news.',
+    })
+
+    await generateCategoriesAndSources(user, {
+      categories: [{ title: 'global affairs' }, { title: 'Climate' }],
+    })
+
+    const categories = await Category.query().where('user_id', user.id).orderBy('id')
+    // The duplicate title is skipped; only the new category is added.
+    assert.deepEqual(
+      categories.map((category) => category.title),
+      ['Global Affairs', 'Climate']
     )
   })
 

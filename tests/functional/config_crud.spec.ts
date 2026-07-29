@@ -58,6 +58,32 @@ test.group('Config CRUD — categories', (group) => {
     again.assertStatus(422)
   })
 
+  test('rejects a category whose title the reader already has', async ({ client }) => {
+    const user = await reader()
+    await client.post('/api/v1/config/categories').json(CATEGORY).loginAs(user)
+    // Same title, different key — still rejected on the title.
+    const dup = await client
+      .post('/api/v1/config/categories')
+      .json({ ...CATEGORY, key: 'eng-blogs-2' })
+      .loginAs(user)
+    dup.assertStatus(422)
+  })
+
+  test('rejects renaming a category to a title the reader already has', async ({ client }) => {
+    const user = await reader()
+    await client.post('/api/v1/config/categories').json(CATEGORY).loginAs(user)
+    const other = await client
+      .post('/api/v1/config/categories')
+      .json({ ...CATEGORY, key: 'thoughts', title: 'Thought Pieces' })
+      .loginAs(user)
+
+    const renamed = await client
+      .put(`/api/v1/config/categories/${other.body().data.id}`)
+      .json({ title: 'Engineering Blogs' })
+      .loginAs(user)
+    renamed.assertStatus(422)
+  })
+
   test('rejects a category whose max is below its min', async ({ client }) => {
     const user = await reader()
     const response = await client
