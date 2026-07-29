@@ -61,4 +61,24 @@ test.group('LlmSourceDiscovery', () => {
       },
     ])
   })
+
+  test('drops exact duplicate sources the model repeats', async ({ assert }) => {
+    const discovery = new LlmSourceDiscovery(
+      discovererReturning({
+        feeds: [
+          { name: 'Repeat', feedUrl: 'https://a.com/feed' },
+          { name: 'repeat', feedUrl: 'https://b.com/feed' },
+        ],
+        channels: [],
+      }),
+      verifierKeeping(['https://a.com/feed', 'https://b.com/feed']),
+      resolverFor({})
+    )
+
+    const sources = await discovery.discoverVerified({ categoryTitle: 'X', relevanceHint: '' })
+
+    // The two same-named feeds collapse to one (case-insensitive).
+    assert.lengthOf(sources, 1)
+    assert.equal(sources[0].name, 'Repeat')
+  })
 })

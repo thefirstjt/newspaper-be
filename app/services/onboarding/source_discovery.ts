@@ -51,7 +51,10 @@ export class LlmSourceDiscovery implements SourceDiscovery {
 
     const channelSources = await this.resolveChannels(channels)
 
-    return [...feedSources, ...channelSources]
+    // A source is unique by name and type within a category, so drop any exact
+    // repeats the model returned (a feed and a channel of the same name are kept
+    // — they differ by type).
+    return dedupeByNameAndType([...feedSources, ...channelSources])
   }
 
   /**
@@ -75,6 +78,17 @@ export class LlmSourceDiscovery implements SourceDiscovery {
     }
     return resolved
   }
+}
+
+/** Keeps the first of each (type, case-insensitive name) pair. */
+function dedupeByNameAndType(sources: VerifiedSource[]): VerifiedSource[] {
+  const seen = new Set<string>()
+  return sources.filter((source) => {
+    const key = `${source.type}\n${source.name.trim().toLowerCase()}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }
 
 let factory: () => SourceDiscovery = () => new LlmSourceDiscovery()

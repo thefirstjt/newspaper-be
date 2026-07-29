@@ -162,6 +162,34 @@ test.group('Category generation (queued work)', (group) => {
     })
   })
 
+  test('keeps an outlet that appears as both a feed and a channel', async ({ assert }) => {
+    discoveryReturning([
+      {
+        type: 'rss',
+        name: 'Channels Television',
+        settings: { feedUrl: 'https://channelstv.com/feed' },
+      },
+      {
+        type: 'youtube',
+        name: 'Channels Television',
+        settings: {
+          channelUrl: 'https://www.youtube.com/@channelstelevision',
+          channelId: 'UCEXGDNclvmg6RW0vipJYsTQ',
+        },
+      },
+    ])
+    const user = await reader()
+
+    await generateCategoriesAndSources(user, { categories: [{ title: 'Nigeria News' }] })
+
+    const sources = await Source.query().where('user_id', user.id).orderBy('type')
+    assert.lengthOf(sources, 2)
+    assert.deepEqual(
+      sources.map((source) => source.type),
+      ['rss', 'youtube']
+    )
+  })
+
   test('a category whose feeds all fail verification is created with no sources', async ({
     assert,
   }) => {
