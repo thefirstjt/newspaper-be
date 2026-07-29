@@ -36,7 +36,11 @@ export interface EditionBuilderDeps {
   scout: Pick<Scout, 'scout'>
   headlines: Pick<
     HeadlineManager,
-    'rankCandidates' | 'summarizeArticle' | 'writeKeyLearning' | 'writeQuiz'
+    | 'rankCandidates'
+    | 'summarizeArticle'
+    | 'writeKeyLearning'
+    | 'writeQuiz'
+    | 'writeEditionHeadline'
   >
   readerContext: Pick<ContextStore, 'assembleReaderContext'>
   seenUrls: Pick<SeenUrlStore, 'markSeen'>
@@ -144,11 +148,14 @@ export class EditionBuilder {
       )
     }
 
-    logger.info('Writing the key learning and quiz…')
-    const keyLearning = await this.deps.headlines.writeKeyLearning({
-      gapTopics: this.deps.gapTopics,
-      readerContext,
-    })
+    logger.info('Writing the front-page headline and quiz…')
+    const front = await this.writeFrontPage(planned, readerContext)
+    // Key learning is paused for now; re-enable by uncommenting this.
+    // const keyLearning = await this.deps.headlines.writeKeyLearning({
+    //   gapTopics: this.deps.gapTopics,
+    //   readerContext,
+    // })
+    const keyLearning: string | null = null
     const quizQuestions = await this.deps.headlines.writeQuiz({
       gapTopics: this.deps.gapTopics,
       count: pickQuizCount(this.deps.quiz),
@@ -201,6 +208,8 @@ export class EditionBuilder {
 
       await this.deps.seenUrls.markSeen(surfaced, trx)
 
+      built.headline = front.headline
+      built.summary = front.summary
       built.keyLearning = keyLearning
       built.status = 'ready'
       built.useTransaction(trx)
@@ -210,6 +219,34 @@ export class EditionBuilder {
     })
 
     return { edition, failures }
+  }
+
+  /**
+   * Writes the edition's front-page headline and summary from the stories it
+   * surfaced today. Returns nulls when nothing was surfaced, so an empty edition
+   * simply has no headline rather than a made-up one.
+   */
+  private async writeFrontPage(
+    planned: PlannedItem[],
+    readerContext: string
+  ): Promise<{ headline: string | null; summary: string | null }> {
+    const titleByKey = new Map(
+      this.deps.categories.map((category) => [category.key, category.title])
+    )
+    const stories = planned
+      .filter((item) => item.state === 'surfaced')
+      .map((item) => ({
+        title: item.candidate.title,
+        section: titleByKey.get(item.candidate.categoryKey) ?? item.candidate.categoryKey,
+        blurb: item.summary ?? item.candidate.snippet,
+      }))
+
+    if (stories.length === 0) {
+      return { headline: null, summary: null }
+    }
+
+    const written = await this.deps.headlines.writeEditionHeadline({ stories, readerContext })
+    return { headline: written.headline, summary: written.summary }
   }
 
   /**

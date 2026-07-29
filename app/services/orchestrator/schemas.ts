@@ -28,6 +28,11 @@ export const quizSchema = z.object({
   ),
 })
 
+export const editionHeadlineSchema = z.object({
+  headline: z.string(),
+  summary: z.string(),
+})
+
 export const sourceDiscoverySchema = z.object({
   sources: z.array(
     z.object({

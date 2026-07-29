@@ -74,6 +74,26 @@ export interface KeyLearningInput {
   readerContext: string
 }
 
+/** One of the day's stories, as the edition headline is written from. */
+export interface EditionHeadlineStory {
+  title: string
+  section: string
+  blurb: string
+}
+
+export interface EditionHeadlineInput {
+  /** The day's surfaced stories, which the headline and summary are drawn from. */
+  stories: EditionHeadlineStory[]
+  /** The assembled "About the reader" markdown block (see ContextStore). */
+  readerContext: string
+}
+
+/** An edition's front-page headline and one-paragraph summary of the day. */
+export interface EditionHeadline {
+  headline: string
+  summary: string
+}
+
 export interface QuizInput {
   gapTopics: string[]
   /** How many questions to produce. */

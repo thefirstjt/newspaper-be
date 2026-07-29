@@ -47,6 +47,7 @@ export interface ApiDefinition {
       show: typeof routes['newspaper.editions.show']
     }
     items: {
+      search: typeof routes['newspaper.items.search']
       rate: typeof routes['newspaper.items.rate']
       discard: typeof routes['newspaper.items.discard']
     }

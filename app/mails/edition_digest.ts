@@ -45,14 +45,40 @@ export default class EditionDigest extends BaseMail {
   prepare() {
     this.message
       .to(this.recipient)
-      .subject(editionSubject(this.edition.date))
+      .subject(editionSubject(this.edition.date, this.edition.headline))
       .html(renderEditionEmail(this.edition, this.appUrl, this.recipientName))
   }
 }
 
 /** The email subject: inviting, with the day in DD/MM/YYYY. */
-export function editionSubject(date: string): string {
-  return `Fresh off the press — your stories for ${formatShortDate(date)}`
+/**
+ * The email subject: the day's headline as the lead, then "your stories for
+ * <date>". Falls back to a generic lead for an edition with no headline.
+ */
+export function editionSubject(date: string, headline?: string | null): string {
+  const lead = headline?.trim() || 'Fresh off the press'
+  return `${lead} — your stories for ${formatShortDate(date)}`
+}
+
+/**
+ * The masthead: the day's front-page headline and one-paragraph summary when the
+ * edition has them, or just the date for an edition built before headlines existed.
+ */
+function renderMasthead(edition: EditionView): string {
+  if (!edition.headline) {
+    return `
+      <p style="margin:0;font-family:${BODY_FONT};font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:${PURPLE};">See Newspaper</p>
+      <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(formatDate(edition.date))}</h1>`
+  }
+
+  const summary = edition.summary
+    ? `<p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:16px;line-height:1.6;color:${DEEP_PURPLE};">${escapeHtml(edition.summary)}</p>`
+    : ''
+
+  return `
+      <p style="margin:0;font-family:${BODY_FONT};font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:${PURPLE};">See Newspaper &middot; ${escapeHtml(formatDate(edition.date))}</p>
+      <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(edition.headline)}</h1>
+      ${summary}`
 }
 
 /** Builds the email's HTML from the day's edition. */
@@ -63,6 +89,7 @@ export function renderEditionEmail(
 ): string {
   const sections = edition.categories.map((category) => renderCategory(category)).join('')
   const year = edition.date.slice(0, 4)
+  const masthead = renderMasthead(edition)
 
   return `<!doctype html>
 <html lang="en">
@@ -91,8 +118,7 @@ export function renderEditionEmail(
           </tr>
           <tr>
             <td class="px" style="padding:36px 40px 0;">
-              <p style="margin:0;font-family:${BODY_FONT};font-size:12px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:${PURPLE};">See Newspaper</p>
-              <h1 style="margin:8px 0 0;font-family:${HEAD_FONT};font-size:30px;line-height:1.15;font-weight:700;color:${NAVY};">${escapeHtml(formatDate(edition.date))}</h1>
+              ${masthead}
             </td>
           </tr>
           <tr>

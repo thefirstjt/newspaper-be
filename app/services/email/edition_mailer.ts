@@ -63,7 +63,8 @@ export class EditionMailer {
     await this.sender.send({
       from: `${FROM_NAME} <${this.fromAddress}>`,
       to: this.recipient,
-      subject: editionSubject(edition.date),
+      // The day's headline leads the subject, then "your stories for <date>".
+      subject: editionSubject(edition.date, edition.headline),
       html: renderEditionEmail(view, this.appUrl, this.recipientName),
     })
 

@@ -85,6 +85,8 @@ export function presentEdition(
     id: edition.id,
     date: edition.date,
     status: edition.status,
+    headline: edition.headline,
+    summary: edition.summary,
     keyLearning: edition.keyLearning,
     categories,
     quiz: quizQuestions.map((question) => presentQuizQuestion(question)),

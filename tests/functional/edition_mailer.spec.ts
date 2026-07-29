@@ -119,6 +119,26 @@ test.group('EditionMailer', (group) => {
     assert.isNotNull(edition.emailedAt)
   })
 
+  test('leads the subject with the edition headline when present', async ({ assert }) => {
+    const edition = await editionWithContent('2026-06-21')
+    edition.headline = 'Regulators draw the first global lines around frontier AI'
+    await edition.save()
+    const sender = recordingSender()
+
+    await new EditionMailer({
+      recipient: 'reader@example.com',
+      appUrl: 'https://app.example.com',
+      fromAddress: 'newspaper@percussionlabs.ai',
+      recipientName: 'Tomiwa',
+      sender,
+    }).deliver(edition)
+
+    assert.equal(
+      sender.sent[0].subject,
+      'Regulators draw the first global lines around frontier AI — your stories for 21/06/2026'
+    )
+  })
+
   test('fails clearly when no recipient is configured', async ({ assert }) => {
     const edition = await editionWithContent('2026-06-21')
     const sender = recordingSender()
