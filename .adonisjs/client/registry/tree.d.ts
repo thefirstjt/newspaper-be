@@ -39,6 +39,7 @@ export interface ApiDefinition {
       index: typeof routes['admin.admin_users.index']
       toggleStatus: typeof routes['admin.admin_users.toggle_status']
       sendEdition: typeof routes['admin.admin_users.send_edition']
+      rebuildEdition: typeof routes['admin.admin_users.rebuild_edition']
     }
   }
   newspaper: {

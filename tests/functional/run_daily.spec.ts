@@ -1,13 +1,6 @@
 import { test } from '@japa/runner'
-import { DateTime } from 'luxon'
 import testUtils from '@adonisjs/core/services/test_utils'
 import User from '#models/user'
-import {
-  editionChannelFor,
-  setDailyRunDispatcher,
-  resetDailyRunDispatcher,
-} from '#services/edition/daily_run'
-import type { DispatchOutcome } from '#services/edition/daily_run'
 
 let counter = 0
 async function reader() {
@@ -23,82 +16,16 @@ test.group('Run daily', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
 
-  // Swap the real (Redis-backed) dispatcher for one that just records calls, so
-  // the endpoint can be tested without a queue running.
-  let dispatched: { userId: string; date: string }[] = []
-  group.each.setup(() => {
-    dispatched = []
-    setDailyRunDispatcher(() => ({
-      async dispatch(userId, date): Promise<DispatchOutcome> {
-        dispatched.push({ userId, date })
-        return 'queued'
-      },
-    }))
-  })
-  group.teardown(() => resetDailyRunDispatcher())
-
-  test('queues today’s edition build and returns the reader’s channel', async ({
-    client,
-    assert,
-  }) => {
+  test('readers can no longer rebuild their own edition', async ({ client }) => {
     const user = await reader()
 
     const response = await client.post('/api/v1/run-daily').loginAs(user)
 
-    response.assertStatus(202)
-    assert.equal(response.body().data.channel, editionChannelFor(user.id))
-
-    assert.lengthOf(dispatched, 1)
-    assert.equal(dispatched[0].userId, user.id)
-    assert.equal(dispatched[0].date, DateTime.now().toISODate())
+    response.assertStatus(400)
   })
 
-  test('rebuilds a specific date when one is given', async ({ client, assert }) => {
-    const user = await reader()
-
-    const response = await client
-      .post('/api/v1/run-daily')
-      .json({ date: '2026-07-01' })
-      .loginAs(user)
-
-    response.assertStatus(202)
-    assert.equal(response.body().data.channel, editionChannelFor(user.id))
-    assert.lengthOf(dispatched, 1)
-    assert.equal(dispatched[0].date, '2026-07-01')
-  })
-
-  test('rejects an invalid date', async ({ client, assert }) => {
-    const user = await reader()
-    const response = await client
-      .post('/api/v1/run-daily')
-      .json({ date: 'not-a-date' })
-      .loginAs(user)
-    response.assertStatus(422)
-    assert.lengthOf(dispatched, 0)
-  })
-
-  test('returns 409 when a build is already in progress for the reader', async ({
-    client,
-    assert,
-  }) => {
-    const user = await reader()
-    setDailyRunDispatcher(() => ({
-      async dispatch(): Promise<DispatchOutcome> {
-        return 'already-running'
-      },
-    }))
-
-    const response = await client.post('/api/v1/run-daily').loginAs(user)
-
-    response.assertStatus(409)
-    // The channel is still returned so the frontend can listen for the running
-    // build to finish.
-    assert.equal(response.body().data.channel, editionChannelFor(user.id))
-  })
-
-  test('requires authentication', async ({ client, assert }) => {
+  test('requires authentication', async ({ client }) => {
     const response = await client.post('/api/v1/run-daily')
     response.assertStatus(401)
-    assert.lengthOf(dispatched, 0)
   })
 })

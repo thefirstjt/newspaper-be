@@ -1,7 +1,9 @@
+import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import Edition from '#models/edition'
 import { editionMailerForUser } from '#services/email/edition_mailer'
+import { editionChannelFor, makeDailyRunDispatcher } from '#services/edition/daily_run'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -54,6 +56,46 @@ export default class AdminUsersController {
 
     await user.refresh()
     return serialize({ date: edition.date, user: presentUser(user) })
+  }
+
+  /**
+   * Rebuilds a reader's edition for a day — the same work the reader's own
+   * run-daily does, not a re-send of the existing one. It re-scouts, re-ranks and
+   * re-summarises, replacing that day's edition. Slow work, so it is queued;
+   * defaults to today, or pass a `date` (YYYY-MM-DD) to (re)build a specific day.
+   */
+  async rebuildEdition({ params, request, response }: HttpContext) {
+    const user = await User.find(params.id)
+    if (!user) {
+      return response.notFound({ error: `There is no user with id ${params.id}.` })
+    }
+
+    const date = this.resolveDate(request.input('date'))
+    if (!date) {
+      return response.unprocessableEntity({ error: 'Provide a valid date as YYYY-MM-DD.' })
+    }
+
+    const channel = editionChannelFor(user.id)
+    const outcome = await makeDailyRunDispatcher().dispatch(user.id, date)
+    if (outcome === 'already-running') {
+      return response.conflict({
+        error: 'A build for this reader is already in progress.',
+        data: { channel },
+      })
+    }
+
+    return response.accepted({ data: { date, channel } })
+  }
+
+  /** Today when no date is given; a valid YYYY-MM-DD otherwise, or null. */
+  private resolveDate(input: unknown): string | null {
+    if (input === undefined || input === null || input === '') {
+      return DateTime.now().toISODate()
+    }
+    if (typeof input !== 'string') {
+      return null
+    }
+    return DateTime.fromISO(input).toISODate()
   }
 }
 

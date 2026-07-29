@@ -211,6 +211,18 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['sendEdition']>>>
     }
   }
+  'admin.admin_users.rebuild_edition': {
+    methods: ["POST"]
+    pattern: '/api/v1/admin/users/:id/rebuild-edition'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['rebuildEdition']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/admin/users_controller').default['rebuildEdition']>>>
+    }
+  }
   'newspaper.editions.today': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/editions/today'

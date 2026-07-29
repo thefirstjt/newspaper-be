@@ -108,6 +108,12 @@ const routes = {
     tokens: [{"old":"/api/v1/admin/users/:id/send-edition","type":0,"val":"api","end":""},{"old":"/api/v1/admin/users/:id/send-edition","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/users/:id/send-edition","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/users/:id/send-edition","type":0,"val":"users","end":""},{"old":"/api/v1/admin/users/:id/send-edition","type":1,"val":"id","end":""},{"old":"/api/v1/admin/users/:id/send-edition","type":0,"val":"send-edition","end":""}],
     types: placeholder as Registry['admin.admin_users.send_edition']['types'],
   },
+  'admin.admin_users.rebuild_edition': {
+    methods: ["POST"],
+    pattern: '/api/v1/admin/users/:id/rebuild-edition',
+    tokens: [{"old":"/api/v1/admin/users/:id/rebuild-edition","type":0,"val":"api","end":""},{"old":"/api/v1/admin/users/:id/rebuild-edition","type":0,"val":"v1","end":""},{"old":"/api/v1/admin/users/:id/rebuild-edition","type":0,"val":"admin","end":""},{"old":"/api/v1/admin/users/:id/rebuild-edition","type":0,"val":"users","end":""},{"old":"/api/v1/admin/users/:id/rebuild-edition","type":1,"val":"id","end":""},{"old":"/api/v1/admin/users/:id/rebuild-edition","type":0,"val":"rebuild-edition","end":""}],
+    types: placeholder as Registry['admin.admin_users.rebuild_edition']['types'],
+  },
   'newspaper.editions.today': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/editions/today',

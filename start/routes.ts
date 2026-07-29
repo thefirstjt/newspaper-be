@@ -79,6 +79,7 @@ router
             router.get('users', [AdminUsersController, 'index'])
             router.post('users/:id/toggle-status', [AdminUsersController, 'toggleStatus'])
             router.post('users/:id/send-edition', [AdminUsersController, 'sendEdition'])
+            router.post('users/:id/rebuild-edition', [AdminUsersController, 'rebuildEdition'])
           })
           .use(middleware.auth({ guards: ['admin'] }))
       })

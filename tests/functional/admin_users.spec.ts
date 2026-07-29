@@ -1,4 +1,5 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 import testUtils from '@adonisjs/core/services/test_utils'
 import Admin from '#models/admin'
 import User from '#models/user'
@@ -8,6 +9,12 @@ import {
   resetEmailSenderFactory,
   type EmailMessage,
 } from '#services/email/email_sender'
+import {
+  editionChannelFor,
+  setDailyRunDispatcher,
+  resetDailyRunDispatcher,
+  type DispatchOutcome,
+} from '#services/edition/daily_run'
 
 /** Captures sent emails instead of delivering them. */
 const sent: EmailMessage[] = []
@@ -41,10 +48,20 @@ test.group('Admin users', (group) => {
     }))
     return () => resetEmailSenderFactory()
   })
+  // Swap the real (Redis-backed) build dispatcher for one that records calls.
+  let dispatched: { userId: string; date: string }[] = []
   group.each.setup(() => {
     sent.length = 0
+    dispatched = []
+    setDailyRunDispatcher(() => ({
+      async dispatch(userId, date): Promise<DispatchOutcome> {
+        dispatched.push({ userId, date })
+        return 'queued'
+      },
+    }))
     return testUtils.db().truncate()
   })
+  group.teardown(() => resetDailyRunDispatcher())
 
   test('an admin lists the readers', async ({ client, assert }) => {
     await reader()
@@ -153,6 +170,45 @@ test.group('Admin users', (group) => {
 
     const response = await client
       .post(`/api/v1/admin/users/${user.id}/send-edition`)
+      .header('Authorization', `Bearer ${token}`)
+    response.assertStatus(404)
+  })
+
+  test("an admin rebuilds today's edition for a reader", async ({ client, assert }) => {
+    const user = await reader()
+    const token = await adminToken(client)
+
+    const response = await client
+      .post(`/api/v1/admin/users/${user.id}/rebuild-edition`)
+      .header('Authorization', `Bearer ${token}`)
+
+    response.assertStatus(202)
+    assert.equal(response.body().data.channel, editionChannelFor(user.id))
+    // A build was queued for this reader today — not an email re-send.
+    assert.lengthOf(dispatched, 1)
+    assert.equal(dispatched[0].userId, user.id)
+    assert.equal(dispatched[0].date, DateTime.now().toISODate())
+    assert.lengthOf(sent, 0)
+  })
+
+  test('an admin rebuilds a specific date when one is given', async ({ client, assert }) => {
+    const user = await reader()
+    const token = await adminToken(client)
+
+    const response = await client
+      .post(`/api/v1/admin/users/${user.id}/rebuild-edition`)
+      .header('Authorization', `Bearer ${token}`)
+      .json({ date: '2026-07-15' })
+
+    response.assertStatus(202)
+    assert.equal(dispatched[0].date, '2026-07-15')
+  })
+
+  test('rebuilding for an unknown reader returns 404', async ({ client }) => {
+    const token = await adminToken(client)
+
+    const response = await client
+      .post('/api/v1/admin/users/does-not-exist/rebuild-edition')
       .header('Authorization', `Bearer ${token}`)
     response.assertStatus(404)
   })
