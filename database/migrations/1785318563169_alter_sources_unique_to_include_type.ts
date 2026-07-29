@@ -10,16 +10,24 @@ export default class extends BaseSchema {
   protected tableName = 'sources'
 
   async up() {
+    // Add the new unique first: on MySQL the category_id foreign key needs an
+    // index, and it is the (category_id, name) unique that currently covers it.
+    // The new (category_id, name, type) unique covers the FK too (same leftmost
+    // column), so once it exists the old one can be dropped.
+    this.schema.alterTable(this.tableName, (table) => {
+      table.unique(['category_id', 'name', 'type'])
+    })
     this.schema.alterTable(this.tableName, (table) => {
       table.dropUnique(['category_id', 'name'])
-      table.unique(['category_id', 'name', 'type'])
     })
   }
 
   async down() {
     this.schema.alterTable(this.tableName, (table) => {
-      table.dropUnique(['category_id', 'name', 'type'])
       table.unique(['category_id', 'name'])
+    })
+    this.schema.alterTable(this.tableName, (table) => {
+      table.dropUnique(['category_id', 'name', 'type'])
     })
   }
 }
