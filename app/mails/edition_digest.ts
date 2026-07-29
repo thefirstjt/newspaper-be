@@ -81,9 +81,9 @@ function renderMasthead(edition: EditionView): string {
 }
 
 /**
- * The greeting line under the masthead: "Hey <name>, <the day's summary>" in
- * black, with the summary lower-cased so it reads as one sentence and trimmed to
- * a set length. Falls back to a plain greeting for an edition with no summary.
+ * The greeting under the masthead: "Hey <name>," and then the day's summary as
+ * its own paragraph, in black and trimmed to a set length. Falls back to a plain
+ * greeting for an edition with no summary.
  */
 function renderGreeting(recipientName: string, summary: string | null): string {
   if (!summary) {

@@ -154,7 +154,7 @@ test.group('EditionMailer', (group) => {
     }).deliver(edition)
 
     const html = sender.sent[0].html
-    assert.include(html, 'Top of the day to you Tomiwa!')
+    assert.include(html, 'Hey Tomiwa,')
     assert.include(html, 'Today the world argued about AI regulation.')
     assert.notInclude(html, "here's your news for today")
   })
