@@ -147,12 +147,14 @@ export class EditionBuilder {
       )
     }
 
-    logger.info('Writing the front-page headline, key learning and quiz…')
+    logger.info('Writing the front-page headline and quiz…')
     const front = await this.writeFrontPage(planned, readerContext)
-    const keyLearning = await this.deps.headlines.writeKeyLearning({
-      gapTopics: this.deps.gapTopics,
-      readerContext,
-    })
+    // Key learning is paused for now; re-enable by uncommenting this.
+    // const keyLearning = await this.deps.headlines.writeKeyLearning({
+    //   gapTopics: this.deps.gapTopics,
+    //   readerContext,
+    // })
+    const keyLearning: string | null = null
     const quizQuestions = await this.deps.headlines.writeQuiz({
       gapTopics: this.deps.gapTopics,
       count: pickQuizCount(this.deps.quiz),

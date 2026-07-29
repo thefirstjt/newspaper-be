@@ -45,14 +45,19 @@ export default class EditionDigest extends BaseMail {
   prepare() {
     this.message
       .to(this.recipient)
-      .subject(this.edition.headline ?? editionSubject(this.edition.date))
+      .subject(editionSubject(this.edition.date, this.edition.headline))
       .html(renderEditionEmail(this.edition, this.appUrl, this.recipientName))
   }
 }
 
 /** The email subject: inviting, with the day in DD/MM/YYYY. */
-export function editionSubject(date: string): string {
-  return `Fresh off the press — your stories for ${formatShortDate(date)}`
+/**
+ * The email subject: the day's headline as the lead, then "your stories for
+ * <date>". Falls back to a generic lead for an edition with no headline.
+ */
+export function editionSubject(date: string, headline?: string | null): string {
+  const lead = headline?.trim() || 'Fresh off the press'
+  return `${lead} — your stories for ${formatShortDate(date)}`
 }
 
 /**

@@ -160,11 +160,12 @@ test.group('EditionBuilder', (group) => {
     assert.isNull(reserve.summary)
   })
 
-  test('writes the key learning and quiz onto the edition', async ({ assert }) => {
+  test('writes the quiz onto the edition and leaves key learning paused', async ({ assert }) => {
     const user = await makeUser()
     const { edition } = await makeBuilder(user.id, candidates).build('2026-05-27')
 
-    assert.equal(edition.keyLearning, 'Today you learned about distributed systems.')
+    // Key learning generation is paused for now.
+    assert.isNull(edition.keyLearning)
 
     const questions = await QuizQuestion.query().where('edition_id', edition.id)
     assert.isAtLeast(questions.length, 1)
