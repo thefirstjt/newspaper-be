@@ -119,6 +119,41 @@ test.group('Scout', () => {
     assert.include(failures[0].message, 'network down')
   })
 
+  test('truncates an over-long snippet so it cannot overflow the database column', async ({
+    assert,
+  }) => {
+    const categories = [
+      category('cat-a', [{ type: 'rss', name: 'Verbose', settings: { feedUrl: 'f1' } }]),
+    ]
+    const hugeSnippet = 'x'.repeat(10_000)
+    const fetchers = {
+      rss: {
+        fetch: async () => [{ ...rawCandidate('https://verbose.com/1'), snippet: hugeSnippet }],
+      },
+    }
+
+    const { candidates } = await new Scout(fetchers, passThroughGate).scout(categories)
+
+    assert.lengthOf(candidates, 1)
+    assert.isBelow(candidates[0].snippet.length, hugeSnippet.length)
+    assert.isTrue(candidates[0].snippet.endsWith('…'))
+  })
+
+  test('leaves a short snippet untouched', async ({ assert }) => {
+    const categories = [
+      category('cat-a', [{ type: 'rss', name: 'Brief', settings: { feedUrl: 'f1' } }]),
+    ]
+    const fetchers = {
+      rss: {
+        fetch: async () => [{ ...rawCandidate('https://brief.com/1'), snippet: 'A short summary.' }],
+      },
+    }
+
+    const { candidates } = await new Scout(fetchers, passThroughGate).scout(categories)
+
+    assert.equal(candidates[0].snippet, 'A short summary.')
+  })
+
   test('drops candidates the seen-url gate filters out', async ({ assert }) => {
     const categories = [
       category('cat-a', [{ type: 'rss', name: 'S1', settings: { feedUrl: 'f1' } }]),

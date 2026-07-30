@@ -81,13 +81,37 @@ export function createScout(userId: string): Scout {
   return new Scout(fetchers, new SeenUrlStore(userId))
 }
 
+/**
+ * The longest a snippet may be. A snippet is only a short preview used to rank
+ * and summarise a candidate, so a few thousand characters is ample. Some feeds
+ * (a full-page scrape masquerading as a summary) hand back enormous blobs; left
+ * unchecked those overflow the database's snippet column and would take a whole
+ * edition's build down with them.
+ */
+const MAX_SNIPPET_LENGTH = 4000
+
 function toScoutedCandidate(
   candidate: RawCandidate,
   categoryKey: string,
   userAdded: boolean
 ): ScoutedCandidate {
   const url = canonicalizeUrl(candidate.url)
-  return { ...candidate, url, urlHash: hashUrl(url), categoryKey, userAdded }
+  return {
+    ...candidate,
+    url,
+    snippet: truncateSnippet(candidate.snippet),
+    urlHash: hashUrl(url),
+    categoryKey,
+    userAdded,
+  }
+}
+
+/** Trims an over-long snippet down to a preview, adding an ellipsis when it does. */
+function truncateSnippet(snippet: string): string {
+  if (snippet.length <= MAX_SNIPPET_LENGTH) {
+    return snippet
+  }
+  return `${snippet.slice(0, MAX_SNIPPET_LENGTH).trimEnd()}…`
 }
 
 function dedupeByHash(candidates: ScoutedCandidate[]): ScoutedCandidate[] {
