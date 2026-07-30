@@ -33,3 +33,6 @@ thoughts.md
 
 # Live reader-context documents (seeded from resources/context templates)
 /context/
+
+# Local test env (holds DB creds; not for the repo)
+.env.test
