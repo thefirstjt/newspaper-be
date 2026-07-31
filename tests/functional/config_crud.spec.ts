@@ -51,6 +51,20 @@ test.group('Config CRUD — categories', (group) => {
     assert.lengthOf(await Category.all(), 0)
   })
 
+  test('creates a category without a relevance hint, defaulting it to the title', async ({
+    client,
+    assert,
+  }) => {
+    const user = await reader()
+    const { relevanceHint, ...withoutHint } = CATEGORY
+
+    const created = await client.post('/api/v1/config/categories').json(withoutHint).loginAs(user)
+    created.assertStatus(200)
+
+    const category = await Category.findByOrFail('id', created.body().data.id)
+    assert.equal(category.relevanceHint, CATEGORY.title)
+  })
+
   test('rejects a duplicate category key', async ({ client }) => {
     const user = await reader()
     await client.post('/api/v1/config/categories').json(CATEGORY).loginAs(user)

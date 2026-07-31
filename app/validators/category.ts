@@ -15,7 +15,10 @@ export const createCategoryValidator = vine.create({
   min: vine.number().min(0).max(50),
   max: vine.number().min(1).max(50),
   poolSize: vine.number().min(1).max(100),
-  relevanceHint: vine.string().trim().minLength(1).maxLength(2000),
+  // A hint that steers the ranker on what counts as relevant for this category.
+  // Optional when creating by hand — the reader need not write one, and the
+  // controller falls back to the title so the column always has a value.
+  relevanceHint: vine.string().trim().minLength(1).maxLength(2000).optional(),
 })
 
 /** Changes to an existing category. Every field is optional; the key is fixed. */

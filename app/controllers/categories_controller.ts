@@ -41,7 +41,11 @@ export default class CategoriesController {
       })
     }
 
-    const category = await Category.create({ userId: user.id, ...data })
+    const category = await Category.create({
+      userId: user.id,
+      ...data,
+      relevanceHint: data.relevanceHint ?? data.title,
+    })
     await category.load('sources')
     return serialize(presentCategory(category))
   }
