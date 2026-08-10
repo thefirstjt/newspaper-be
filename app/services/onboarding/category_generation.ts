@@ -1,9 +1,9 @@
 import Category from '#models/category'
-import Source from '#models/source'
 import type User from '#models/user'
 import { contextStoreFor } from '#services/context/context_store_manager'
 import { makeSourceDiscovery } from '#services/onboarding/source_discovery'
 import { makeInterestCategorization } from '#services/onboarding/interest_categorization'
+import { discoverAndSaveSources } from '#services/sources/category_source_generation'
 
 // How many items a discovered category surfaces per day, and how deep its pool
 // goes — the same defaults the shipped config uses for its categories.
@@ -75,21 +75,7 @@ export async function generateCategoriesAndSources(
       relevanceHint: item.description ?? item.title,
     })
 
-    const sources = await discovery.discoverVerified({
-      categoryTitle: category.title,
-      relevanceHint: category.relevanceHint,
-      persona,
-    })
-    for (const source of sources) {
-      await Source.create({
-        userId: user.id,
-        categoryId: category.id,
-        type: source.type,
-        name: source.name,
-        settings: source.settings,
-        enabled: true,
-      })
-    }
+    await discoverAndSaveSources(user, category, persona, discovery)
 
     await category.load('sources')
     created.push(category)

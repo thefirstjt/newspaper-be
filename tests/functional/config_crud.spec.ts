@@ -4,6 +4,11 @@ import User from '#models/user'
 import Category from '#models/category'
 import Source from '#models/source'
 import UserSetting from '#models/user_setting'
+import {
+  setCategorySourcesDispatcher,
+  resetCategorySourcesDispatcher,
+} from '#services/sources/category_source_generation'
+import type { CategorySourcesDispatcher } from '#services/sources/category_source_generation'
 
 let counter = 0
 async function reader() {
@@ -13,6 +18,19 @@ async function reader() {
     email: `reader-${counter}@example.com`,
     password: 'secret123',
   })
+}
+
+/** A dispatcher that records calls instead of touching the queue (no Redis). */
+function recordingDispatcher(): CategorySourcesDispatcher & {
+  calls: { userId: string; categoryId: number }[]
+} {
+  const calls: { userId: string; categoryId: number }[] = []
+  return {
+    calls,
+    async dispatch(userId, categoryId) {
+      calls.push({ userId, categoryId })
+    },
+  }
 }
 
 const CATEGORY = {
@@ -27,6 +45,13 @@ const CATEGORY = {
 test.group('Config CRUD — categories', (group) => {
   group.setup(() => testUtils.db().migrate())
   group.each.setup(() => testUtils.db().truncate())
+
+  let dispatcher: ReturnType<typeof recordingDispatcher>
+  group.each.setup(() => {
+    dispatcher = recordingDispatcher()
+    setCategorySourcesDispatcher(() => dispatcher)
+  })
+  group.teardown(() => resetCategorySourcesDispatcher())
 
   test('creates, lists, updates, and deletes a category', async ({ client, assert }) => {
     const user = await reader()
@@ -63,6 +88,22 @@ test.group('Config CRUD — categories', (group) => {
 
     const category = await Category.findByOrFail('id', created.body().data.id)
     assert.equal(category.relevanceHint, CATEGORY.title)
+  })
+
+  test('dispatches background source discovery and returns its channel on create', async ({
+    client,
+    assert,
+  }) => {
+    const user = await reader()
+
+    const created = await client.post('/api/v1/config/categories').json(CATEGORY).loginAs(user)
+    created.assertStatus(200)
+
+    const id = created.body().data.id
+    assert.equal(created.body().data.sourcesChannel, `users/${user.id}/categories/${id}/sources`)
+    assert.lengthOf(dispatcher.calls, 1)
+    assert.equal(dispatcher.calls[0].userId, user.id)
+    assert.equal(dispatcher.calls[0].categoryId, id)
   })
 
   test('rejects a duplicate category key', async ({ client }) => {

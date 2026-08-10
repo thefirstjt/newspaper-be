@@ -1,6 +1,10 @@
 import Category from '#models/category'
 import { presentCategory } from '#transformers/newspaper_presenter'
 import { createCategoryValidator, updateCategoryValidator } from '#validators/category'
+import {
+  categorySourcesChannelFor,
+  makeCategorySourcesDispatcher,
+} from '#services/sources/category_source_generation'
 import type { HttpContext } from '@adonisjs/core/http'
 
 /**
@@ -47,7 +51,16 @@ export default class CategoriesController {
       relevanceHint: data.relevanceHint ?? data.title,
     })
     await category.load('sources')
-    return serialize(presentCategory(category))
+
+    // Discover the category's sources in the background, the same way onboarding
+    // does — the reader gets the category straight away and its sources fill in
+    // once the job finishes. The returned channel is where that result lands.
+    await makeCategorySourcesDispatcher().dispatch(user.id, category.id)
+
+    return serialize({
+      ...presentCategory(category),
+      sourcesChannel: categorySourcesChannelFor(user.id, category.id),
+    })
   }
 
   async update({ auth, params, request, serialize, response }: HttpContext) {

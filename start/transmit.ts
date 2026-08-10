@@ -31,3 +31,14 @@ transmit.authorize<{ userId: string }>('users/:userId/onboarding/categories', (c
 transmit.authorize<{ userId: string }>('users/:userId/editions', (ctx, { userId }) => {
   return ctx.auth.user?.id === userId
 })
+
+/**
+ * The background source discovery for a category the reader added is private to
+ * them: only the authenticated reader whose id is in the channel may listen.
+ */
+transmit.authorize<{ userId: string }>(
+  'users/:userId/categories/:categoryId/sources',
+  (ctx, { userId }) => {
+    return ctx.auth.user?.id === userId
+  }
+)
