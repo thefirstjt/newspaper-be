@@ -46,13 +46,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy compose + proxy config to droplet
+      - name: Copy production Compose file to droplet
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: docker-compose.prod.yml,Caddyfile
+          source: docker-compose.prod.yml
           target: /opt/newspaper/
 
       - name: Pull and restart on droplet
@@ -68,7 +68,20 @@ jobs:
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             export IMAGE_TAG="$IMAGE_TAG"
             docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            attempts=0
+            until docker compose -f docker-compose.prod.yml exec -T app node -e "fetch('http://127.0.0.1:3333/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; do
+              attempts=$((attempts + 1))
+              if [ "$attempts" -ge 30 ]; then
+                docker compose -f docker-compose.prod.yml logs --tail=100 app
+                exit 1
+              fi
+              sleep 2
+            done
+            curl --fail --silent --show-error \
+              --retry 20 --retry-delay 2 --retry-all-errors \
+              https://news-api.percussionlabs.ai/
             docker logout ghcr.io
             docker image prune -f
         env:

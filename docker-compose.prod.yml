@@ -73,10 +73,21 @@ services:
   app:
     <<: *app
     command: ['node', 'bin/server.js']
-    # No host port — the app is reached only through Caddy on the compose
+    # No host port — the app is reached only through Traefik on the shared edge
     # network, so it is never exposed directly to the internet.
     expose:
       - '3333'
+    labels:
+      traefik.enable: 'true'
+      traefik.docker.network: edge
+      traefik.http.routers.newspaper.entrypoints: websecure
+      traefik.http.routers.newspaper.rule: Host(`news-api.percussionlabs.ai`)
+      traefik.http.routers.newspaper.tls: 'true'
+      traefik.http.routers.newspaper.tls.certresolver: letsencrypt
+      traefik.http.services.newspaper.loadbalancer.server.port: '3333'
+    networks:
+      default:
+      edge:
     depends_on:
       mysql:
         condition: service_healthy
@@ -111,24 +122,11 @@ services:
       migrate:
         condition: service_completed_successfully
 
-  # Reverse proxy with automatic HTTPS. It terminates TLS for the domain and
-  # forwards to the app over the internal network. Certificates are stored in the
-  # caddy-data volume so they survive restarts and are not re-requested.
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      - app
-
 volumes:
   mysql-data:
   redis-data:
-  caddy-data:
-  caddy-config:
+
+networks:
+  edge:
+    external: true
+    name: edge
