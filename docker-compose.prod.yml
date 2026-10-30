@@ -1,6 +1,6 @@
-# Production stack for the droplet. Unlike docker-compose.yml (which builds the
+# Production stack for the server. Unlike docker-compose.yml (which builds the
 # image locally), this pulls a prebuilt image from GHCR — CI builds and pushes
-# it, and the droplet only runs it. Deploy is driven by .github/workflows/deploy.yml.
+# it, and the server only runs it. Deploy is driven by .github/workflows/deploy.yml.
 #
 # Expects /opt/newspaper/.env with APP_KEY, APP_URL, the DB_* and QUEUE_REDIS_*
 # values, and the provider API keys. IMAGE_TAG is set per deploy by CI (falls
@@ -28,7 +28,7 @@ services:
       MYSQL_USER: ${DB_USER:-newspaper}
       MYSQL_PASSWORD: ${DB_PASSWORD:-newspaper}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootsecret}
-    # Published on the droplet's loopback only (not the public internet), so it
+    # Published on the server's loopback only (not the public internet), so it
     # can be reached from the host — and, through an SSH tunnel, by a local DB
     # client like TablePlus. The compose network still reaches it as "mysql".
     ports:
@@ -73,18 +73,11 @@ services:
   app:
     <<: *app
     command: ['node', 'bin/server.js']
-    # No host port — the app is reached only through Traefik on the shared edge
-    # network, so it is never exposed directly to the internet.
+    # No host port — the app is reached only through the server's nginx on the
+    # shared edge network (as newspaper-app-1:3333), so it is never exposed
+    # directly to the internet.
     expose:
       - '3333'
-    labels:
-      traefik.enable: 'true'
-      traefik.docker.network: edge
-      traefik.http.routers.newspaper.entrypoints: websecure
-      traefik.http.routers.newspaper.rule: Host(`news-api.percussionlabs.ai`)
-      traefik.http.routers.newspaper.tls: 'true'
-      traefik.http.routers.newspaper.tls.certresolver: letsencrypt
-      traefik.http.services.newspaper.loadbalancer.server.port: '3333'
     networks:
       default:
       edge:

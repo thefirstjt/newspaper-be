@@ -1,6 +1,6 @@
 name: Deploy
 
-# Build the image in CI and have the droplet pull and run it. Runs on every push
+# Build the image in CI and have the server pull and run it. Runs on every push
 # to main, and can be triggered by hand from the Actions tab.
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy production Compose file to droplet
+      - name: Copy production Compose file to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -55,7 +55,7 @@ jobs:
           source: docker-compose.prod.yml
           target: /opt/newspaper/
 
-      - name: Pull and restart on droplet
+      - name: Pull and restart on server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
