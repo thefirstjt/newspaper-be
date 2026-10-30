@@ -8,7 +8,7 @@
 
 # Settings shared by every service that runs the app image.
 x-app: &app
-  image: ghcr.io/prismaticoder/newspaper-be:${IMAGE_TAG:-latest}
+  image: ghcr.io/thefirstjt/newspaper-be:${IMAGE_TAG:-latest}
   env_file: .env
   # Point the app at the MySQL and Redis services on the compose network,
   # regardless of what the .env says (its DB_HOST etc. are for the app container).
