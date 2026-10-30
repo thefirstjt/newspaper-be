@@ -6,7 +6,9 @@
 # module) out of the final image.
 
 # Shared base — pin the Node version the app is developed and tested against.
-FROM node:24-bookworm-slim AS base
+# Pinned to the patch release: on Node 24.22.2, ace fails to load the commands
+# ("Invalid command exported from admin/create.js. Invalid URL").
+FROM node:24.19.0-bookworm-slim AS base
 WORKDIR /app
 
 # All dependencies, including dev ones, so the app can be compiled. python3/make/
