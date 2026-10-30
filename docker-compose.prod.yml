@@ -23,6 +23,13 @@ x-app: &app
 services:
   mysql:
     image: mysql:8.4
+    # Sized for a small database on a shared 4 GB server: without performance
+    # monitoring and with smaller buffers, an idle MySQL uses ~130 MB instead of ~430 MB.
+    command:
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=64M
+      - --innodb-log-buffer-size=8M
+      - --max-connections=50
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-newspaper}
       MYSQL_USER: ${DB_USER:-newspaper}
